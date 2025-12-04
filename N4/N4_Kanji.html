@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanji Flashcard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/wanakana"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #222;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .flashcard-container {
+            background-color: #222;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            
+            text-align: center;
+            max-width: 1300px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            color: white;
+        }
+        .kanji-card {
+            min-height: 300px;
+            background-color: #222;
+            border-radius: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+        }
+        .kanji-text {
+            font-size: 8rem;
+            font-weight: 700;
+            color: white;
+            transition: transform 0.3s ease;
+        }
+        .kanji-kana {
+            font-size: 2rem;
+            color: white;
+            position: absolute;
+            top: 1rem;
+            left: 1.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .kanji-english {
+            font-size: 1.5rem;
+            color: white;
+            position: absolute;
+            top: 1rem; 
+            right: 1.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .kanji-examples {
+            position: absolute;
+            bottom: 1rem;
+            left: 1.5rem;
+            right: 1.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            max-height: 110px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        .example-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.5rem;
+            margin-top: 0.25rem;
+        }
+        .example-item:nth-child(odd) {
+            background-color: rgba(0,0,0,0.03);
+        }
+        .jp-example {
+            font-weight: 600;
+            color: white;
+        }
+        .en-example {
+            color: white;
+            font-size: 1rem;
+        }
+
+        .kanji-card.flipped .kanji-kana,
+        .kanji-card.flipped .kanji-english,
+        .kanji-card.flipped .kanji-examples {
+            opacity: 1;
+        }
+        .kanji-card.flipped .kanji-text {
+            transform: scale(0.8);
+            color: #cbd5e0;
+        }
+        .kanji-card:hover {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .option-button {
+            background-color: #edf2f7;
+            color: #2d3748;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+        .option-button:hover:not(.correct):not(.incorrect) {
+            background-color: #e2e8f0;
+            border-color: #cbd5e0;
+        }
+        .option-button.correct {
+            background-color: #48bb78;
+            color: white;
+            border-color: #38a169;
+        }
+        .option-button.incorrect {
+            background-color: #f56565;
+            color: white;
+            border-color: #e53e3e;
+        }
+        #stats-container {
+            font-size: 1.1rem;
+            color: white;
+        }
+        .progress-bar {
+            height: 8px;
+            background-color: #cbd5e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            background-color: #4c51bf;
+            transition: width 0.3s ease;
+        }
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem 1.5rem;
+            color: white;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: nowrap;
+            color: white;
+        }
+        .radio-group {
+            display: flex;
+            gap: 1rem;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        .radio-group input[type="radio"] {
+            display: none;
+        }
+        .radio-group .custom-radio {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #a0aec0;
+            display: inline-block;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        .radio-group input[type="radio"]:checked + .custom-radio {
+            background-color: #4c51bf;
+            border-color: #4c51bf;
+        }
+        .radio-group input[type="radio"]:checked + .custom-radio::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #typing-input-container {
+            padding: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        #typing-input {
+            font-size: 1.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            border: 2px solid #cbd5e0;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: black;
+        }
+        #typing-input:focus {
+            border-color: #4c51bf;
+            box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.3);
+        }
+        #typing-input.correct-input {
+             border-color: #48bb78;
+             background-color: #f0fff4;
+        }
+        #typing-input.incorrect-input {
+             border-color: #f56565;
+             background-color: #fff5f5;
+        }
+        #typing-feedback {
+            font-size: 1.1rem;
+            color: white;
+            font-weight: 600;
+            min-height: 1.5rem;
+        }
+        .stats-correct {
+            color: #48bb78;
+            font-weight: bold;
+        }
+        .stats-incorrect {
+            color: #f56565;
+            font-weight: bold;
+        }
+        #session-size{
+            color: #222;
+            
+        }
+        #custom-session-size{
+            color: #222;
+        }
+        #range-start{
+            color: #222;
+        }
+        #range-end{
+            color: #222;
+        }
+
+        
+    </style>
+</head>
+<body>
+    <div class="flashcard-container">
+        <h1 class="text-3xl font-bold ">N5 Kanji</h1>
+
+        <div id="kanji-card" class="kanji-card">
+            <span id="kanji-text" class="kanji-text">字</span>
+            <span id="kanji-kana" class="kanji-kana"></span>
+            <span id="kanji-english" class="kanji-english"></span>
+            <div id="kanji-examples" class="kanji-examples"></div>
+        </div>
+
+        <div id="answer-area">
+            <div id="options-grid" class="options-grid"></div>
+            <div id="typing-input-container" style="display: none;">
+                <p id="typing-feedback"></p>
+                <input type="text" class= "text-black-300" id="typing-input" placeholder="Type romaji and press Enter" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            </div>
+        </div>
+
+        <div id="stats-container" class="flex flex-wrap justify-between items-center w-full text-gray-700 mb-1">
+            <div class="flex gap-x-4">
+                <span class="stats-correct">Correct: <span id="stats-correct">0</span></span>
+                <span class="stats-incorrect">Incorrect: <span id="stats-incorrect">0</span></span>
+            </div>
+            <div class="flex gap-x-4">
+                <span class="font-bold">Remaining: <span id="stats-remaining">0</span></span>
+                <span class="font-bold"><span id="stats-percentage">0</span>%</span>
+            </div>
+        </div>
+        <div class="progress-bar">
+            <div id="progress" class="progress" style="width: 0%;"></div>
+        </div>
+        
+        <div class="controls-container mt-2">
+            <div class="control-group">
+                <span class="font-semibold">Session Size:</span>
+                <select id="session-size" class="p-2 border rounded-md">
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="all">All</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <input type="number" id="custom-session-size" class="p-2 border rounded-md w-24 text-center" style="display: none;" placeholder="Size" min="1">
+                <div class="control-group ml-2">
+                    <input type="checkbox" id="randomize-toggle" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                    <label for="randomize-toggle" class="font-semibold cursor-pointer">Randomize</label>
+                </div>
+            </div>
+             <div class="control-group">
+                <input type="checkbox" id="range-mode-toggle" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                <label for="range-mode-toggle" class="font-semibold cursor-pointer">Practice a Range</label>
+                <div id="range-controls" class="flex items-center gap-2" style="display: none;">
+                    <input type="number" id="range-start" class="p-2 border rounded-md w-24 text-center" placeholder="Start" min="1">
+                    <span class="">-</span>
+                    <input type="number" id="range-end" class="p-2 border rounded-md w-24 text-center" placeholder="End" min="1">
+                </div>
+            </div>
+             <div class="control-group">
+                <span class="font-semibold">Method:</span>
+                <div class="radio-group" id="answer-method-group"></div>
+            </div>
+            <div class="control-group">
+                <span class="font-semibold">Show:</span>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="display-type" value="kanji" checked>
+                        <span class="custom-radio"></span>
+                        Kanji
+                    </label>
+                    <label>
+                        <input type="radio" name="display-type" value="kana">
+                        <span class="custom-radio"></span>
+                        Kana
+                    </label>
+                    <label>
+                        <input type="radio" name="display-type" value="english">
+                        <span class="custom-radio"></span>
+                        English
+                    </label>
+                </div>
+            </div>
+            <div class="control-group">
+                <span class="font-semibold">Answer with:</span>
+                <div class="radio-group" id="answer-type-group"></div>
+            </div>
+            <button id="restart-button" class="bg-indigo-500 text-white font-bold py-2 px-4 rounded-full shadow hover:bg-indigo-600 transition duration-200">
+                Restart Session
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const kanjiData = [
+            {"kanji": "会", "kana": "カイ | あ(う)", "english": "meeting; meet", "examples": [{"japanese": "会議 (かいぎ)", "english": "meeting"}, {"japanese": "会社 (かいしゃ)", "english": "company"}]},
+            {"kanji": "同", "kana": "ドウ | おな(じ)", "english": "same, agree, equal", "examples": [{"japanese": "同じ (おなじ)", "english": "same"}, {"japanese": "同時 (どうじ)", "english": "simultaneous"}]},
+            {"kanji": "事", "kana": "ジ | こと", "english": "matter, thing, fact, business, reason, possibly", "examples": [{"japanese": "仕事 (しごと)", "english": "job"}, {"japanese": "食事 (しょくじ)", "english": "meal"}]},
+            {"kanji": "自", "kana": "ジ、シ | みずか(ら)", "english": "oneself", "examples": [{"japanese": "自分 (じぶん)", "english": "oneself"}, {"japanese": "自動車 (じどうしゃ)", "english": "automobile"}]},
+            {"kanji": "社", "kana": "シャ | やしろ", "english": "company, firm, office, association, shrine", "examples": [{"japanese": "会社 (かいしゃ)", "english": "company"}, {"japanese": "社会 (しゃかい)", "english": "society"}]},
+            {"kanji": "発", "kana": "ハツ、ホツ", "english": "departure, discharge, emit, start from", "examples": [{"japanese": "出発 (しゅっぱつ)", "english": "departure"}, {"japanese": "発見 (はっけん)", "english": "discovery"}]},
+            {"kanji": "者", "kana": "シャ | もの", "english": "someone, person", "examples": [{"japanese": "医者 (いしゃ)", "english": "doctor"}, {"japanese": "若者 (わかもの)", "english": "young person"}]},
+            {"kanji": "地", "kana": "チ、ジ", "english": "ground, earth", "examples": [{"japanese": "地下鉄 (ちかてつ)", "english": "subway"}, {"japanese": "地図 (ちず)", "english": "map"}]},
+            {"kanji": "業", "kana": "ギョウ | わざ", "english": "business, vocation, arts, performance", "examples": [{"japanese": "授業 (じゅぎょう)", "english": "class"}, {"japanese": "産業 (さんぎょう)", "english": "industry"}]},
+            {"kanji": "方", "kana": "ホウ | かた", "english": "direction, person, alternative", "examples": [{"japanese": "方法 (ほうほう)", "english": "method"}, {"japanese": "夕方 (ゆうがた)", "english": "evening"}]},
+            {"kanji": "新", "kana": "シン | あたら(しい)、あら(た)", "english": "new", "examples": [{"japanese": "新しい (あたらしい)", "english": "new"}, {"japanese": "新聞 (しんぶん)", "english": "newspaper"}]},
+            {"kanji": "場", "kana": "ジョウ | ば", "english": "location, place", "examples": [{"japanese": "場所 (ばしょ)", "english": "place"}, {"japanese": "工場 (こうじょう)", "english": "factory"}]},
+            {"kanji": "員", "kana": "イン", "english": "employee, member, number, the one in charge", "examples": [{"japanese": "会社員 (かいしゃいん)", "english": "office worker"}, {"japanese": "店員 (てんいん)", "english": "store clerk"}]},
+            {"kanji": "立", "kana": "リツ | た(つ)", "english": "stand up, rise", "examples": [{"japanese": "立つ (たつ)", "english": "to stand"}, {"japanese": "国立 (こくりつ)", "english": "national"}]},
+            {"kanji": "開", "kana": "カイ | ひら(く)、あ(ける)", "english": "open, unfold, unseal", "examples": [{"japanese": "開ける (あける)", "english": "to open"}, {"japanese": "開店 (かいてん)", "english": "store opening"}]},
+            {"kanji": "手", "kana": "シュ | て", "english": "hand", "examples": [{"japanese": "上手 (じょうず)", "english": "skillful"}, {"japanese": "下手 (へた)", "english": "unskillful"}]},
+            {"kanji": "力", "kana": "リョク、リキ | ちから", "english": "power, strength, strong, strain, bear up, exert", "examples": [{"japanese": "力 (ちから)", "english": "power"}, {"japanese": "協力 (きょうりょく)", "english": "cooperation"}]},
+            {"kanji": "問", "kana": "モン | と(う)", "english": "question, ask, problem", "examples": [{"japanese": "質問 (しつもん)", "english": "question"}, {"japanese": "問題 (もんだい)", "english": "problem"}]},
+            {"kanji": "代", "kana": "ダイ | か(わり)", "english": "substitute, change, convert, replace, period", "examples": [{"japanese": "時代 (じだい)", "english": "era"}, {"japanese": "代わりに (かわりに)", "english": "instead of"}]},
+            {"kanji": "明", "kana": "メイ、ミョウ | あか(るい)", "english": "bright, light", "examples": [{"japanese": "明るい (あかるい)", "english": "bright"}, {"japanese": "明日 (あした)", "english": "tomorrow"}]},
+            {"kanji": "動", "kana": "ドウ | うご(く)", "english": "move, motion, change", "examples": [{"japanese": "動く (うごく)", "english": "to move"}, {"japanese": "動物 (どうぶつ)", "english": "animal"}]},
+            {"kanji": "京", "kana": "キョウ、ケイ、キン | みやこ", "english": "capital", "examples": [{"japanese": "東京 (とうきょう)", "english": "Tokyo"}, {"japanese": "上京 (じょうきょう)", "english": "proceeding to the capital"}]},
+            {"kanji": "目", "kana": "モク、ボク | め", "english": "eye, class, look, insight, experience", "examples": [{"japanese": "目 (め)", "english": "eye"}, {"japanese": "目的 (もくてき)", "english": "purpose"}]},
+            {"kanji": "通", "kana": "ツウ | とお(る)、かよ(う)", "english": "traffic, pass through, avenue, commute", "examples": [{"japanese": "通る (とおる)", "english": "to pass through"}, {"japanese": "普通 (ふつう)", "english": "normal"}]},
+            {"kanji": "言", "kana": "ゲン、ゴン | い(う)、こと", "english": "say, word", "examples": [{"japanese": "言う (いう)", "english": "to say"}, {"japanese": "言葉 (ことば)", "english": "word, language"}]},
+            {"kanji": "理", "kana": "リ", "english": "logic, arrangement, reason, justice, truth", "examples": [{"japanese": "理由 (りゆう)", "english": "reason"}, {"japanese": "料理 (りょうり)", "english": "cooking"}]},
+            {"kanji": "体", "kana": "タイ | からだ", "english": "body, substance, object, reality", "examples": [{"japanese": "体 (からだ)", "english": "body"}, {"japanese": "体育 (たいいく)", "english": "physical education"}]},
+            {"kanji": "田", "kana": "デン | た", "english": "rice field, rice paddy", "examples": [{"japanese": "田中 (たなか)", "english": "Tanaka (surname)"}, {"japanese": "田んぼ (たんぼ)", "english": "rice paddy"}]},
+            {"kanji": "主", "kana": "シュ | ぬし、おも", "english": "lord, chief, master, main thing, principal", "examples": [{"japanese": "主人 (しゅじん)", "english": "husband, master"}, {"japanese": "主に (おもに)", "english": "mainly"}]},
+            {"kanji": "題", "kana": "ダイ", "english": "topic, subject", "examples": [{"japanese": "問題 (もんだい)", "english": "problem"}, {"japanese": "宿題 (しゅくだい)", "english": "homework"}]},
+            {"kanji": "意", "kana": "イ", "english": "idea, mind, heart, taste, thought", "examples": [{"japanese": "意味 (いみ)", "english": "meaning"}, {"japanese": "意見 (いけん)", "english": "opinion"}]},
+            {"kanji": "不", "kana": "フ、ブ", "english": "negative, non-, bad", "examples": [{"japanese": "不安 (ふあん)", "english": "anxiety"}, {"japanese": "不便 (ふべん)", "english": "inconvenient"}]},
+            {"kanji": "作", "kana": "サク、サ | つく(る)", "english": "make, production, prepare, build", "examples": [{"japanese": "作る (つくる)", "english": "to make"}, {"japanese": "作文 (さくぶん)", "english": "composition"}]},
+            {"kanji": "用", "kana": "ヨウ | もち(いる)", "english": "utilize, business, service, use, employ", "examples": [{"japanese": "用事 (ようじ)", "english": "errand"}, {"japanese": "利用 (りよう)", "english": "use"}]},
+            {"kanji": "度", "kana": "ド、タク | たび、た(い)", "english": "degrees, occurrence, time, counter for occurrences", "examples": [{"japanese": "今度 (こんど)", "english": "next time"}, {"japanese": "一度 (いちど)", "english": "once"}]},
+            {"kanji": "強", "kana": "キョウ、ゴウ | つよ(い)", "english": "strong", "examples": [{"japanese": "強い (つよい)", "english": "strong"}, {"japanese": "勉強 (べんきょう)", "english": "study"}]},
+            {"kanji": "公", "kana": "コウ", "english": "public, prince, official, governmental", "examples": [{"japanese": "公園 (こうえん)", "english": "park"}, {"japanese": "公立 (こうりつ)", "english": "public (institution)"}]},
+            {"kanji": "持", "kana": "ジ | も(つ)", "english": "hold, have", "examples": [{"japanese": "持つ (もつ)", "english": "to hold"}, {"japanese": "気持ち (きもち)", "english": "feeling"}]},
+            {"kanji": "野", "kana": "ヤ | の", "english": "plains, field, rustic, civilian life", "examples": [{"japanese": "野菜 (やさい)", "english": "vegetable"}, {"japanese": "野球 (やきゅう)", "english": "baseball"}]},
+            {"kanji": "以", "kana": "イ | もっ(て)", "english": "by means of, because, in view of, compared with", "examples": [{"japanese": "以上 (いじょう)", "english": "more than"}, {"japanese": "以外 (いがい)", "english": "except"}]},
+            {"kanji": "思", "kana": "シ | おも(う)", "english": "think", "examples": [{"japanese": "思う (おもう)", "english": "to think"}, {"japanese": "不思議 (ふしぎ)", "english": "mysterious"}]},
+            {"kanji": "家", "kana": "カ | いえ、や、うち", "english": "house, home, family, professional, expert", "examples": [{"japanese": "家族 (かぞく)", "english": "family"}, {"japanese": "家 (いえ)", "english": "house"}]},
+            {"kanji": "世", "kana": "セイ、セ | よ", "english": "generation, world, society, public", "examples": [{"japanese": "世界 (せかい)", "english": "world"}, {"japanese": "世話 (せわ)", "english": "care"}]},
+            {"kanji": "多", "kana": "タ | おお(い)", "english": "many, frequent, much", "examples": [{"japanese": "多い (おおい)", "english": "many"}, {"japanese": "多分 (たぶん)", "english": "probably"}]},
+            {"kanji": "正", "kana": "セイ、ショウ | ただ(しい)、まさ(に)", "english": "correct, justice, righteous", "examples": [{"japanese": "正しい (ただしい)", "english": "correct"}, {"japanese": "正月 (しょうがつ)", "english": "New Year"}]},
+            {"kanji": "安", "kana": "アン | やす(い)", "english": "safe, peaceful, cheap", "examples": [{"japanese": "安い (やすい)", "english": "cheap"}, {"japanese": "安全 (あんぜん)", "english": "safety"}]},
+            {"kanji": "院", "kana": "イン", "english": "institution, temple, mansion, school", "examples": [{"japanese": "病院 (びょういん)", "english": "hospital"}, {"japanese": "大学院 (だいがくいん)", "english": "graduate school"}]},
+            {"kanji": "心", "kana": "シン | こころ", "english": "heart, mind, spirit", "examples": [{"japanese": "心 (こころ)", "english": "heart"}, {"japanese": "安心 (あんしん)", "english": "relief"}]},
+            {"kanji": "界", "kana": "カイ", "english": "world, boundary", "examples": [{"japanese": "世界 (せかい)", "english": "world"}, {"japanese": "境界 (きょうかい)", "english": "boundary"}]},
+            {"kanji": "教", "kana": "キョウ | おし(える)、おそ(わる)", "english": "teach, faith, doctrine", "examples": [{"japanese": "教える (おしえる)", "english": "to teach"}, {"japanese": "教会 (きょうかい)", "english": "church"}]},
+            {"kanji": "文", "kana": "ブン、モン | ふみ", "english": "sentence, literature, style, art", "examples": [{"japanese": "文学 (ぶんがく)", "english": "literature"}, {"japanese": "文字 (もじ)", "english": "character"}]},
+            {"kanji": "元", "kana": "ゲン、ガン | もと", "english": "beginning, former time, origin", "examples": [{"japanese": "元気 (げんき)", "english": "healthy, energetic"}, {"japanese": "元 (もと)", "english": "origin"}]},
+            {"kanji": "重", "kana": "ジュウ、チョウ | おも(い)、かさ(ねる)", "english": "heavy, important, esteem, respect", "examples": [{"japanese": "重い (おもい)", "english": "heavy"}, {"japanese": "大事 (だいじ)", "english": "important"}]},
+            {"kanji": "近", "kana": "キン | ちか(い)", "english": "near, early, akin, tantamount", "examples": [{"japanese": "近い (ちかい)", "english": "near"}, {"japanese": "近所 (きんじょ)", "english": "neighborhood"}]},
+            {"kanji": "考", "kana": "コウ | かんが(える)", "english": "consider, think over", "examples": [{"japanese": "考える (かんがえる)", "english": "to think"}, {"japanese": "参考 (さんこう)", "english": "reference"}]},
+            {"kanji": "画", "kana": "ガ、カク", "english": "brush-stroke, picture", "examples": [{"japanese": "映画 (えいが)", "english": "movie"}, {"japanese": "計画 (けいかく)", "english": "plan"}]},
+            {"kanji": "海", "kana": "カイ | うみ", "english": "sea, ocean", "examples": [{"japanese": "海 (うみ)", "english": "sea"}, {"japanese": "海外 (かいがい)", "english": "overseas"}]},
+            {"kanji": "売", "kana": "バイ | う(る)", "english": "sell", "examples": [{"japanese": "売る (うる)", "english": "to sell"}, {"japanese": "売店 (ばいてん)", "english": "kiosk, stand"}]},
+            {"kanji": "知", "kana": "チ | し(る)", "english": "know, wisdom", "examples": [{"japanese": "知る (しる)", "english": "to know"}, {"japanese": "知らせる (しらせる)", "english": "to inform"}]},
+            {"kanji": "道", "kana": "ドウ | みち", "english": "road-way, street, district, journey, course", "examples": [{"japanese": "道 (みち)", "english": "road"}, {"japanese": "柔道 (じゅうどう)", "english": "judo"}]},
+            {"kanji": "集", "kana": "シュウ | あつ(める)", "english": "gather, meet", "examples": [{"japanese": "集める (あつめる)", "english": "to collect"}, {"japanese": "集会 (しゅうかい)", "english": "meeting, assembly"}]},
+            {"kanji": "別", "kana": "ベツ | わか(れる)、わ(ける)", "english": "separate, branch off, diverge", "examples": [{"japanese": "別れる (わかれる)", "english": "to separate"}, {"japanese": "特別 (とくべつ)", "english": "special"}]},
+            {"kanji": "物", "kana": "ブツ、モツ | もの", "english": "thing, object, matter", "examples": [{"japanese": "物 (もの)", "english": "thing"}, {"japanese": "食べ物 (たべもの)", "english": "food"}]},
+            {"kanji": "使", "kana": "シ | つか(う)", "english": "use, order, messenger, ambassador", "examples": [{"japanese": "使う (つかう)", "english": "to use"}, {"japanese": "大使館 (たいしかん)", "english": "embassy"}]},
+            {"kanji": "品", "kana": "ヒン | しな", "english": "goods, refinement, dignity, article", "examples": [{"japanese": "品物 (しなもの)", "english": "goods"}, {"japanese": "作品 (さくひん)", "english": "work of art"}]},
+            {"kanji": "計", "kana": "ケイ | はか(る)", "english": "plot, plan, scheme, measure", "examples": [{"japanese": "時計 (とけい)", "english": "watch, clock"}, {"japanese": "計画 (けいかく)", "english": "plan"}]},
+            {"kanji": "死", "kana": "シ | し(ぬ)", "english": "death, die", "examples": [{"japanese": "死ぬ (しぬ)", "english": "to die"}, {"japanese": "死 (し)", "english": "death"}]},
+            {"kanji": "特", "kana": "トク", "english": "special", "examples": [{"japanese": "特別 (とくべつ)", "english": "special"}, {"japanese": "特に (とくに)", "english": "especially"}]},
+            {"kanji": "私", "kana": "シ | わたくし、わたし", "english": "private, I, me", "examples": [{"japanese": "私 (わたし)", "english": "I, me"}, {"japanese": "私立 (しりつ)", "english": "private (institution)"}]},
+            {"kanji": "始", "kana": "シ | はじ(める)", "english": "commence, begin", "examples": [{"japanese": "始める (はじめる)", "english": "to begin"}, {"japanese": "開始 (かいし)", "english": "start"}]},
+            {"kanji": "朝", "kana": "チョウ | あさ", "english": "morning", "examples": [{"japanese": "朝 (あさ)", "english": "morning"}, {"japanese": "今朝 (けさ)", "english": "this morning"}]},
+            {"kanji": "運", "kana": "ウン | はこ(ぶ)", "english": "carry, luck, destiny, fate, transport", "examples": [{"japanese": "運ぶ (はこぶ)", "english": "to carry"}, {"japanese": "運転 (うんてん)", "english": "driving"}]},
+            {"kanji": "終", "kana": "シュウ | お(わる)", "english": "end, finish", "examples": [{"japanese": "終わる (おわる)", "english": "to end"}, {"japanese": "最終 (さいしゅう)", "english": "last, final"}]},
+            {"kanji": "台", "kana": "ダイ、タイ | うてな", "english": "pedestal, a stand, counter for machines and vehicles", "examples": [{"japanese": "台所 (だいどころ)", "english": "kitchen"}, {"japanese": "一台 (いちだい)", "english": "one machine/vehicle"}]},
+            {"kanji": "広", "kana": "コウ | ひろ(い)", "english": "wide, broad, spacious", "examples": [{"japanese": "広い (ひろい)", "english": "wide"}, {"japanese": "広告 (こうこく)", "english": "advertisement"}]},
+            {"kanji": "住", "kana": "ジュウ、チュウ | す(む)", "english": "dwell, reside, live, inhabit", "examples": [{"japanese": "住む (すむ)", "english": "to live"}, {"japanese": "住所 (じゅうしょ)", "english": "address"}]},
+            {"kanji": "無", "kana": "ム、ブ | な(い)", "english": "nothingness, none, ain't, nothing, nil, not", "examples": [{"japanese": "無い (ない)", "english": "to not exist"}, {"japanese": "無料 (むりょう)", "english": "free of charge"}]},
+            {"kanji": "真", "kana": "シン | ま、まこと", "english": "true, reality, Buddhist sect", "examples": [{"japanese": "写真 (しゃしん)", "english": "photograph"}, {"japanese": "真ん中 (まんなか)", "english": "middle"}]},
+            {"kanji": "有", "kana": "ユウ、ウ | あ(る)", "english": "possess, have, exist, happen", "examples": [{"japanese": "有る (ある)", "english": "to exist"}, {"japanese": "有名 (ゆうめい)", "english": "famous"}]},
+            {"kanji": "口", "kana": "コウ | くち", "english": "mouth", "examples": [{"japanese": "入口 (いりぐち)", "english": "entrance"}, {"japanese": "人口 (じんこう)", "english": "population"}]},
+            {"kanji": "少", "kana": "ショウ | すく(ない)、すこ(し)", "english": "few, little", "examples": [{"japanese": "少ない (すくない)", "english": "few"}, {"japanese": "少し (すこし)", "english": "a little"}]},
+            {"kanji": "町", "kana": "チョウ | まち", "english": "town, village, block, street", "examples": [{"japanese": "町 (まち)", "english": "town"}, {"japanese": "町長 (ちょうちょう)", "english": "mayor of a town"}]},
+            {"kanji": "料", "kana": "リョウ", "english": "fee, materials", "examples": [{"japanese": "料理 (りょうり)", "english": "cooking"}, {"japanese": "給料 (きゅうりょう)", "english": "salary"}]},
+            {"kanji": "工", "kana": "コウ、ク、グ", "english": "craft, construction", "examples": [{"japanese": "工場 (こうじょう)", "english": "factory"}, {"japanese": "工業 (こうぎょう)", "english": "manufacturing industry"}]},
+            {"kanji": "建", "kana": "ケン、コン | た(てる)", "english": "build", "examples": [{"japanese": "建てる (たてる)", "english": "to build"}, {"japanese": "建物 (たてもの)", "english": "building"}]},
+            {"kanji": "空", "kana": "クウ | そら、から、あ(く)、す(く)、むな(しい)", "english": "empty, sky, void, vacant, vacuum", "examples": [{"japanese": "空 (そら)", "english": "sky"}, {"japanese": "空気 (くうき)", "english": "air"}]},
+            {"kanji": "急", "kana": "キュウ | いそ(ぐ)", "english": "hurry, emergency, sudden, steep", "examples": [{"japanese": "急ぐ (いそぐ)", "english": "to hurry"}, {"japanese": "急に (きゅうに)", "english": "suddenly"}]},
+            {"kanji": "止", "kana": "シ | と(まる)、や(める)", "english": "stop, halt", "examples": [{"japanese": "止まる (とまる)", "english": "to stop"}, {"japanese": "中止 (ちゅうし)", "english": "cancellation"}]},
+            {"kanji": "送", "kana": "ソウ | おく(る)", "english": "escort, send", "examples": [{"japanese": "送る (おくる)", "english": "to send"}, {"japanese": "放送 (ほうそう)", "english": "broadcast"}]},
+            {"kanji": "切", "kana": "セツ、サイ | き(る)", "english": "cut, cutoff, be sharp", "examples": [{"japanese": "切る (きる)", "english": "to cut"}, {"japanese": "大切 (たいせつ)", "english": "important"}]},
+            {"kanji": "転", "kana": "テン | ころ(がる)", "english": "revolve, turn around, change", "examples": [{"japanese": "運転 (うんてん)", "english": "driving"}, {"japanese": "自転車 (じてんしゃ)", "english": "bicycle"}]},
+            {"kanji": "研", "kana": "ケン | と(ぐ)", "english": "polish, study of, sharpen", "examples": [{"japanese": "研究 (けんきゅう)", "english": "research"}, {"japanese": "研修 (けんしゅう)", "english": "training"}]},
+            {"kanji": "足", "kana": "ソク | あし、た(りる)", "english": "leg, foot, be sufficient", "examples": [{"japanese": "足 (あし)", "english": "leg, foot"}, {"japanese": "足りる (たりる)", "english": "to be sufficient"}]},
+            {"kanji": "究", "kana": "キュウ", "english": "research, study", "examples": [{"japanese": "研究 (けんきゅう)", "english": "research"}, {"japanese": "探究 (たんきゅう)", "english": "inquiry"}]},
+            {"kanji": "楽", "kana": "ガク、ラク | たの(しい)", "english": "music, comfort, ease", "examples": [{"japanese": "楽しい (たのしい)", "english": "fun"}, {"japanese": "音楽 (おんがく)", "english": "music"}]},
+            {"kanji": "起", "kana": "キ | お(きる)、おこ(す)", "english": "wake up, get up; rouse", "examples": [{"japanese": "起きる (おきる)", "english": "to get up"}, {"japanese": "起こす (おこす)", "english": "to wake someone up"}]},
+            {"kanji": "着", "kana": "チャク | き(る)、つ(く)", "english": "arrive, wear, counter for suits of clothing", "examples": [{"japanese": "着る (きる)", "english": "to wear"}, {"japanese": "着く (つく)", "english": "to arrive"}]},
+            {"kanji": "店", "kana": "テン | みせ", "english": "store, shop", "examples": [{"japanese": "店 (みせ)", "english": "store"}, {"japanese": "店員 (てんいん)", "english": "store clerk"}]},
+            {"kanji": "病", "kana": "ビョウ | や(む)", "english": "ill, sick", "examples": [{"japanese": "病気 (びょうき)", "english": "illness"}, {"japanese": "病院 (びょういん)", "english": "hospital"}]},
+            {"kanji": "質", "kana": "シツ、シチ | たち、ただ(す)", "english": "substance, quality, matter, temperament", "examples": [{"japanese": "質問 (しつもん)", "english": "question"}, {"japanese": "品質 (ひんしつ)", "english": "quality"}]}, //100
+            {"kanji": "待", "kana": "タイ | ま(つ)", "english": "wait, depend on", "examples": [{"japanese": "待つ (まつ)", "english": "to wait"}, {"japanese": "招待 (しょうたい)", "english": "invitation"}]},
+            {"kanji": "試", "kana": "シ | こころ(みる)、ため(す)", "english": "test, try, attempt, experiment", "examples": [{"japanese": "試験 (しけん)", "english": "exam"}, {"japanese": "試す (ためす)", "english": "to try"}]},
+            {"kanji": "族", "kana": "ゾク", "english": "tribe, family", "examples": [{"japanese": "家族 (かぞく)", "english": "family"}, {"japanese": "民族 (みんぞく)", "english": "ethnic group"}]},
+            {"kanji": "銀", "kana": "ギン", "english": "silver", "examples": [{"japanese": "銀行 (ぎんこう)", "english": "bank"}, {"japanese": "銀 (ぎん)", "english": "silver"}]},
+            {"kanji": "早", "kana": "ソウ、サッ | はや(い)", "english": "early, fast", "examples": [{"japanese": "早い (はやい)", "english": "early, fast"}, {"japanese": "早速 (さっそく)", "english": "immediately"}]},
+            {"kanji": "映", "kana": "エイ | うつ(る)", "english": "reflect, reflection, projection", "examples": [{"japanese": "映画 (えいが)", "english": "movie"}, {"japanese": "映る (うつる)", "english": "to be reflected"}]},
+            {"kanji": "親", "kana": "シン | おや、した(しい)", "english": "parent, intimacy, relative, familiarity", "examples": [{"japanese": "親 (おや)", "english": "parent"}, {"japanese": "親切 (しんせつ)", "english": "kind"}]},
+            {"kanji": "験", "kana": "ケン", "english": "verification, effect, testing", "examples": [{"japanese": "試験 (しけん)", "english": "exam"}, {"japanese": "経験 (けいけん)", "english": "experience"}]},
+            {"kanji": "英", "kana": "エイ", "english": "England, English, hero, outstanding", "examples": [{"japanese": "英語 (えいご)", "english": "English language"}, {"japanese": "英国 (えいこく)", "english": "United Kingdom"}]},
+            {"kanji": "医", "kana": "イ", "english": "doctor, medicine", "examples": [{"japanese": "医者 (いしゃ)", "english": "doctor"}, {"japanese": "医学 (いがく)", "english": "medical science"}]},
+            {"kanji": "仕", "kana": "シ", "english": "attend, doing, official, serve", "examples": [{"japanese": "仕事 (しごと)", "english": "job, work"}, {"japanese": "仕方 (しかた)", "english": "method, way"}]},
+            {"kanji": "去", "kana": "キョ、コ | さ(る)", "english": "gone, past, quit, leave, elapse, eliminate", "examples": [{"japanese": "去年 (きょねん)", "english": "last year"}, {"japanese": "去る (さる)", "english": "to leave"}]},
+            {"kanji": "味", "kana": "ミ | あじ", "english": "flavor, taste", "examples": [{"japanese": "味 (あじ)", "english": "taste, flavor"}, {"japanese": "意味 (いみ)", "english": "meaning"}]},
+            {"kanji": "写", "kana": "シャ | うつ(る)", "english": "copy, be photographed, describe", "examples": [{"japanese": "写真 (しゃしん)", "english": "photograph"}, {"japanese": "写す (うつす)", "english": "to copy"}]},
+            {"kanji": "字", "kana": "ジ", "english": "character, letter, word", "examples": [{"japanese": "漢字 (かんじ)", "english": "Kanji"}, {"japanese": "文字 (もじ)", "english": "character, letter"}]},
+            {"kanji": "答", "kana": "トウ | こた(える)", "english": "solution, answer", "examples": [{"japanese": "答える (こたえる)", "english": "to answer"}, {"japanese": "答え (こたえ)", "english": "answer"}]},
+            {"kanji": "夜", "kana": "ヤ | よ、よる", "english": "night, evening", "examples": [{"japanese": "夜 (よる)", "english": "night"}, {"japanese": "今夜 (こんや)", "english": "tonight"}]},
+            {"kanji": "音", "kana": "オン | おと、ね", "english": "sound, noise", "examples": [{"japanese": "音楽 (おんがく)", "english": "music"}, {"japanese": "音 (おと)", "english": "sound"}]},
+            {"kanji": "注", "kana": "チュウ | そそ(ぐ)", "english": "pour, irrigate, shed (tears), flow into, concentrate on", "examples": [{"japanese": "注意 (ちゅうい)", "english": "caution, warning"}, {"japanese": "注文 (ちゅうもん)", "english": "order (for an item)"}]},
+            {"kanji": "帰", "kana": "キ | かえ(る)", "english": "homecoming, arrive at, lead to, result in", "examples": [{"japanese": "帰る (かえる)", "english": "to return home"}, {"japanese": "帰り (かえり)", "english": "return"}]},
+            {"kanji": "古", "kana": "コ | ふる(い)", "english": "old", "examples": [{"japanese": "古い (ふるい)", "english": "old"}, {"japanese": "中古 (ちゅうこ)", "english": "second-hand"}]},
+            {"kanji": "歌", "kana": "カ | うた、うた(う)", "english": "song, sing", "examples": [{"japanese": "歌 (うた)", "english": "song"}, {"japanese": "歌う (うたう)", "english": "to sing"}]},
+            {"kanji": "買", "kana": "バイ | か(う)", "english": "buy", "examples": [{"japanese": "買う (かう)", "english": "to buy"}, {"japanese": "買い物 (かいもの)", "english": "shopping"}]},
+            {"kanji": "悪", "kana": "アク | わる(い)", "english": "bad, evil, wrong", "examples": [{"japanese": "悪い (わるい)", "english": "bad"}, {"japanese": "悪魔 (あくま)", "english": "devil, demon"}]},
+            {"kanji": "図", "kana": "ズ、ト | はか(る)", "english": "map, drawing, plan, extraordinary", "examples": [{"japanese": "地図 (ちず)", "english": "map"}, {"japanese": "図書館 (としょかん)", "english": "library"}]},
+            {"kanji": "週", "kana": "シュウ", "english": "week", "examples": [{"japanese": "今週 (こんしゅう)", "english": "this week"}, {"japanese": "来週 (らいしゅう)", "english": "next week"}]},
+            {"kanji": "室", "kana": "シツ | むろ", "english": "room, apartment, chamber, greenhouse, cellar", "examples": [{"japanese": "教室 (きょうしつ)", "english": "classroom"}, {"japanese": "部屋 (へや)", "english": "room"}]},
+            {"kanji": "歩", "kana": "ホ、ブ | ある(く)", "english": "walk, counter for steps", "examples": [{"japanese": "歩く (あるく)", "english": "to walk"}, {"japanese": "散歩 (さんぽ)", "english": "a walk, stroll"}]},
+            {"kanji": "風", "kana": "フウ、フ | かぜ", "english": "wind, air, style, manner", "examples": [{"japanese": "風 (かぜ)", "english": "wind"}, {"japanese": "台風 (たいふう)", "english": "typhoon"}]},
+            {"kanji": "紙", "kana": "シ | かみ", "english": "paper", "examples": [{"japanese": "紙 (かみ)", "english": "paper"}, {"japanese": "手紙 (てがみ)", "english": "letter"}]},
+            {"kanji": "黒", "kana": "コク | くろ", "english": "black", "examples": [{"japanese": "黒い (くろい)", "english": "black"}, {"japanese": "黒板 (こくばん)", "english": "blackboard"}]},
+            {"kanji": "花", "kana": "カ | はな", "english": "flower", "examples": [{"japanese": "花 (はな)", "english": "flower"}, {"japanese": "花火 (はなび)", "english": "fireworks"}]},
+            {"kanji": "春", "kana": "シュン | はる", "english": "spring", "examples": [{"japanese": "春 (はる)", "english": "spring"}, {"japanese": "春休み (はるやすみ)", "english": "spring break"}]},
+            {"kanji": "赤", "kana": "セキ、シャク | あか(い)", "english": "red", "examples": [{"japanese": "赤い (あかい)", "english": "red"}, {"japanese": "赤ちゃん (あかちゃん)", "english": "baby"}]},
+            {"kanji": "青", "kana": "セイ、ショウ | あお(い)", "english": "blue", "examples": [{"japanese": "青い (あおい)", "english": "blue"}, {"japanese": "青年 (せいねん)", "english": "youth"}]},
+            {"kanji": "館", "kana": "カン | やかた", "english": "building, mansion, large building, palace", "examples": [{"japanese": "図書館 (としょかん)", "english": "library"}, {"japanese": "映画館 (えいがかん)", "english": "movie theater"}]},
+            {"kanji": "屋", "kana": "オク | や", "english": "roof, house, shop, dealer, seller", "examples": [{"japanese": "部屋 (へや)", "english": "room"}, {"japanese": "本屋 (ほんや)", "english": "bookstore"}]},
+            {"kanji": "色", "kana": "ショク、シキ | いろ", "english": "color", "examples": [{"japanese": "色 (いろ)", "english": "color"}, {"japanese": "景色 (けしき)", "english": "scenery"}]},
+            {"kanji": "走", "kana": "ソウ | はし(る)", "english": "run", "examples": [{"japanese": "走る (はしる)", "english": "to run"}, {"japanese": "馳走 (ちそう)", "english": "feast, treat"}]},
+            {"kanji": "秋", "kana": "シュウ | あき", "english": "autumn, fall", "examples": [{"japanese": "秋 (あき)", "english": "autumn"}, {"japanese": "秋学期 (あきがっき)", "english": "fall semester"}]},
+            {"kanji": "夏", "kana": "カ、ゲ | なつ", "english": "summer", "examples": [{"japanese": "夏 (なつ)", "english": "summer"}, {"japanese": "夏休み (なつやすみ)", "english": "summer vacation"}]},
+            {"kanji": "習", "kana": "シュウ | なら(う)", "english": "learn", "examples": [{"japanese": "習う (ならう)", "english": "to learn"}, {"japanese": "練習 (れんしゅう)", "english": "practice"}]},
+            {"kanji": "駅", "kana": "エキ", "english": "station", "examples": [{"japanese": "駅 (えき)", "english": "station"}, {"japanese": "駅員 (えきいん)", "english": "station attendant"}]},
+            {"kanji": "洋", "kana": "ヨウ", "english": "ocean, sea, foreign, Western style", "examples": [{"japanese": "洋服 (ようふく)", "english": "western-style clothes"}, {"japanese": "西洋 (せいよう)", "english": "the West"}]},
+            {"kanji": "旅", "kana": "リョ | たび", "english": "trip, travel", "examples": [{"japanese": "旅行 (りょこう)", "english": "travel"}, {"japanese": "旅 (たび)", "english": "trip, journey"}]},
+            {"kanji": "服", "kana": "フク", "english": "clothing, admit, obey", "examples": [{"japanese": "服 (ふく)", "english": "clothes"}, {"japanese": "洋服 (ようふく)", "english": "western-style clothes"}]},
+            {"kanji": "夕", "kana": " | ゆう", "english": "evening", "examples": [{"japanese": "夕方 (ゆうがた)", "english": "evening"}, {"japanese": "七夕 (たなばた)", "english": "Tanabata Star Festival"}]},
+            {"kanji": "借", "kana": "シャク | か(りる)", "english": "borrow, rent", "examples": [{"japanese": "借りる (かりる)", "english": "to borrow"}, {"japanese": "借金 (しゃっきん)", "english": "debt"}]},
+            {"kanji": "曜", "kana": "ヨウ", "english": "weekday", "examples": [{"japanese": "日曜日 (にちようび)", "english": "Sunday"}, {"japanese": "何曜日 (なんようび)", "english": "what day of the week"}]},
+            {"kanji": "飲", "kana": "イン | の(む)", "english": "drink", "examples": [{"japanese": "飲む (のむ)", "english": "to drink"}, {"japanese": "飲み物 (のみもの)", "english": "drink, beverage"}]},
+            {"kanji": "肉", "kana": "ニク", "english": "meat", "examples": [{"japanese": "肉 (にく)", "english": "meat"}, {"japanese": "牛肉 (ぎゅうにく)", "english": "beef"}]},
+            {"kanji": "貸", "kana": "タイ | か(す)", "english": "lend", "examples": [{"japanese": "貸す (かす)", "english": "to lend"}, {"japanese": "貸し出し (かしだし)", "english": "lending, loaning"}]},
+            {"kanji": "堂", "kana": "ドウ", "english": "public chamber, hall", "examples": [{"japanese": "食堂 (しょくどう)", "english": "cafeteria"}, {"japanese": "講堂 (こうどう)", "english": "auditorium"}]},
+            {"kanji": "鳥", "kana": "チョウ | とり", "english": "bird, chicken", "examples": [{"japanese": "鳥 (とり)", "english": "bird"}, {"japanese": "白鳥 (はくちょう)", "english": "swan"}]},
+            {"kanji": "飯", "kana": "ハン | めし", "english": "meal, rice", "examples": [{"japanese": "ご飯 (ごはん)", "english": "cooked rice, meal"}, {"japanese": "晩ご飯 (ばんごはん)", "english": "dinner"}]},
+            {"kanji": "勉", "kana": "ベン | つと(める)", "english": "exertion, endeavor, effort", "examples": [{"japanese": "勉強 (べんきょう)", "english": "study"}, {"japanese": "勤勉 (きんべん)", "english": "diligent"}]},
+            {"kanji": "冬", "kana": "トウ | ふゆ", "english": "winter", "examples": [{"japanese": "冬 (ふゆ)", "english": "winter"}, {"japanese": "冬休み (ふゆやすみ)", "english": "winter vacation"}]},
+            {"kanji": "昼", "kana": "チュウ | ひる", "english": "daytime, noon", "examples": [{"japanese": "昼 (ひる)", "english": "noon, daytime"}, {"japanese": "昼ご飯 (ひるごはん)", "english": "lunch"}]},
+            {"kanji": "茶", "kana": "チャ、サ", "english": "tea", "examples": [{"japanese": "お茶 (おちゃ)", "english": "tea"}, {"japanese": "喫茶店 (きっさてん)", "english": "coffee shop"}]},
+            {"kanji": "弟", "kana": "テイ、ダイ | おとうと", "english": "younger brother", "examples": [{"japanese": "弟 (おとうと)", "english": "younger brother"}, {"japanese": "兄弟 (きょうだい)", "english": "siblings"}]},
+            {"kanji": "牛", "kana": "ギュウ | うし", "english": "cow", "examples": [{"japanese": "牛 (うし)", "english": "cow, cattle"}, {"japanese": "牛肉 (ぎゅうにく)", "english": "beef"}]},
+            {"kanji": "魚", "kana": "ギョ | うお、さかな", "english": "fish", "examples": [{"japanese": "魚 (さかな)", "english": "fish"}, {"japanese": "金魚 (きんぎょ)", "english": "goldfish"}]},
+            {"kanji": "兄", "kana": "キョウ、ケイ | あに", "english": "elder brother", "examples": [{"japanese": "兄 (あに)", "english": "elder brother"}, {"japanese": "お兄さん (おにいさん)", "english": "older brother"}]},
+            {"kanji": "犬", "kana": "ケン | いぬ", "english": "dog", "examples": [{"japanese": "犬 (いぬ)", "english": "dog"}, {"japanese": "子犬 (こいぬ)", "english": "puppy"}]},
+            {"kanji": "妹", "kana": "マイ | いもうと", "english": "younger sister", "examples": [{"japanese": "妹 (いもうと)", "english": "younger sister"}, {"japanese": "姉妹 (しまい)", "english": "sisters"}]},
+            {"kanji": "姉", "kana": "シ | あね", "english": "elder sister", "examples": [{"japanese": "姉 (あね)", "english": "elder sister"}, {"japanese": "お姉さん (おねえさん)", "english": "older sister"}]},
+            {"kanji": "漢", "kana": "カン", "english": "China", "examples": [{"japanese": "漢字 (かんじ)", "english": "Kanji (Chinese characters)"}, {"japanese": "漢方薬 (かんぽうやく)", "english": "Chinese herbal medicine"}]}, //167
+        ];
+
+
+        // DOM elements
+        const kanjiCard = document.getElementById('kanji-card');
+        const kanjiText = document.getElementById('kanji-text');
+        const kanjiKana = document.getElementById('kanji-kana');
+        const kanjiEnglish = document.getElementById('kanji-english');
+        const kanjiExamples = document.getElementById('kanji-examples');
+        const optionsGrid = document.getElementById('options-grid');
+        const progressElement = document.getElementById('progress');
+        const restartButton = document.getElementById('restart-button');
+        const displayRadios = document.querySelectorAll('input[name="display-type"]');
+        const answerTypeGroup = document.getElementById('answer-type-group');
+        const sessionSizeSelect = document.getElementById('session-size');
+        const customSessionSizeInput = document.getElementById('custom-session-size');
+        const randomizeToggle = document.getElementById('randomize-toggle');
+        const statsCorrect = document.getElementById('stats-correct');
+        const statsIncorrect = document.getElementById('stats-incorrect');
+        const statsRemaining = document.getElementById('stats-remaining');
+        const statsPercentage = document.getElementById('stats-percentage');
+        
+        const answerMethodGroup = document.getElementById('answer-method-group');
+        const typingInputContainer = document.getElementById('typing-input-container');
+        const typingInput = document.getElementById('typing-input');
+        const typingFeedback = document.getElementById('typing-feedback');
+        
+        // New range practice elements
+        const rangeModeToggle = document.getElementById('range-mode-toggle');
+        const rangeControls = document.getElementById('range-controls');
+        const rangeStartInput = document.getElementById('range-start');
+        const rangeEndInput = document.getElementById('range-end');
+
+        // State variables
+        let currentKanji;
+        let sessionKanji = [];
+        let isAnswered = false;
+        let selectedDisplayType = 'kanji';
+        let selectedAnswerType = 'kana'; 
+        let isRandomized = false;
+        
+        let initialSessionSize = 0;
+        let correctlyAnsweredCount = 0;
+        let incorrectAnswerCount = 0;
+        
+        let allIndividualKana = [];
+        let userSelections = new Set();
+        
+        let selectedAnswerMethod = 'multiple-choice';
+        let remainingKanaToType = [];
+
+        function initializeKana() {
+            const kanaSet = new Set();
+            kanjiData.forEach(item => {
+                item.kana.split(' | ').forEach(reading => {
+                    kanaSet.add(reading.trim());
+                });
+            });
+            allIndividualKana = Array.from(kanaSet);
+        };
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        function getAnswerValue(kanjiObject, type) {
+            switch (type) {
+                case 'kanji': return kanjiObject.kanji;
+                case 'kana': return kanjiObject.kana;
+                case 'english': return kanjiObject.english;
+                default: return '';
+            }
+        }
+
+        // --- MULTIPLE CHOICE LOGIC --- //
+        function getRandomIncorrectOptions(correctOption, count) {
+            const allButCorrect = kanjiData.filter(item => item.kanji !== correctOption.kanji);
+            shuffleArray(allButCorrect);
+            return allButCorrect.slice(0, count);
+        }
+        
+        function renderStandardAnswerOptions(options) {
+            optionsGrid.innerHTML = '';
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.classList.add('option-button');
+                button.textContent = getAnswerValue(option, selectedAnswerType);
+                button.addEventListener('click', () => checkStandardAnswer(button, option));
+                optionsGrid.appendChild(button);
+            });
+        }
+
+        function checkStandardAnswer(button, selectedOption) {
+            if (isAnswered) return;
+            isAnswered = true;
+            kanjiCard.classList.add('flipped');
+            const isCorrect = selectedOption.kanji === currentKanji.kanji;
+
+            if (isCorrect) {
+                correctlyAnsweredCount++;
+                sessionKanji.shift();
+                button.classList.add('correct');
+            } else {
+                incorrectAnswerCount++;
+                button.classList.add('incorrect');
+                const failedCard = sessionKanji.shift();
+                sessionKanji.push(failedCard);
+            }
+            
+            const allButtons = optionsGrid.querySelectorAll('.option-button');
+            const correctAnswerValue = getAnswerValue(currentKanji, selectedAnswerType);
+            allButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === correctAnswerValue) {
+                    btn.classList.add('correct');
+                }
+            });
+            
+            updateProgress();
+            setupAdvanceHandler();
+        }
+
+        function generateKanaQuestion() {
+            optionsGrid.innerHTML = '';
+            const correctKana = currentKanji.kana.split(' | ').map(r => r.trim());
+            const numIncorrectNeeded = Math.max(0, 9 - correctKana.length);
+            
+            const incorrectOptions = allIndividualKana
+                .filter(r => !correctKana.includes(r))
+                .sort(() => 0.5 - Math.random())
+                .slice(0, numIncorrectNeeded);
+            
+            let allOptions = [...correctKana, ...incorrectOptions];
+            shuffleArray(allOptions);
+
+            allOptions.forEach(kana => {
+                const button = document.createElement('button');
+                button.classList.add('option-button');
+                button.textContent = kana;
+                button.addEventListener('click', () => checkConcurrentKanaAnswer(button, kana, correctKana));
+                optionsGrid.appendChild(button);
+            });
+        }
+
+        function checkConcurrentKanaAnswer(button, selectedKana, correctKana) {
+            if (isAnswered || button.disabled) return;
+            const correctKanaSet = new Set(correctKana);
+
+            if (correctKanaSet.has(selectedKana)) {
+                button.classList.add('correct');
+                button.disabled = true;
+                userSelections.add(selectedKana);
+
+                if (userSelections.size === correctKanaSet.size) {
+                    isAnswered = true;
+                    kanjiCard.classList.add('flipped');
+                    correctlyAnsweredCount++;
+                    sessionKanji.shift();
+                    updateProgress();
+                    setupAdvanceHandler();
+                }
+            } else {
+                incorrectAnswerCount++;
+                button.classList.add('incorrect');
+                isAnswered = true;
+                kanjiCard.classList.add('flipped');
+                const failedCard = sessionKanji.shift();
+                sessionKanji.push(failedCard);
+                
+                optionsGrid.querySelectorAll('.option-button').forEach(btn => {
+                    if (correctKanaSet.has(btn.textContent)) {
+                        btn.classList.add('correct');
+                    }
+                    btn.disabled = true;
+                });
+                updateProgress();
+                setupAdvanceHandler();
+            }
+        }
+        
+        // --- TYPING LOGIC --- //
+        function setupTypingQuestion() {
+            const correctKanaStrings = currentKanji.kana
+                .split(' | ')
+                .map(r => r.trim().replace(/[()]/g, ""));
+
+            remainingKanaToType = correctKanaStrings.map(kana => ({
+                kana: kana,
+                romaji: wanakana.toRomaji(kana)
+            }));
+            
+            typingInput.value = '';
+            typingInput.disabled = false;
+            typingInput.classList.remove('correct-input', 'incorrect-input');
+            typingFeedback.textContent = `Type one of the ${remainingKanaToType.length} kana(s) in romaji.`;
+            setTimeout(() => typingInput.focus(), 100);
+        }
+
+        function handleTypingAnswer(event) {
+            if (event.key !== 'Enter' || isAnswered) return;
+
+            const userInput = typingInput.value.trim().toLowerCase();
+            if (!userInput) return;
+
+            const matchedIndex = remainingKanaToType.findIndex(r => r.romaji === userInput);
+
+            if (matchedIndex > -1) {
+                const correctReading = remainingKanaToType[matchedIndex];
+                remainingKanaToType.splice(matchedIndex, 1);
+
+                typingInput.classList.add('correct-input');
+                setTimeout(() => typingInput.classList.remove('correct-input'), 500);
+
+                if (remainingKanaToType.length === 0) {
+                    isAnswered = true;
+                    typingInput.disabled = true;
+                    typingFeedback.textContent = 'Perfect! All kana found.';
+                    
+                    correctlyAnsweredCount++;
+                    sessionKanji.shift();
+                    kanjiCard.classList.add('flipped');
+                    updateProgress();
+                    setupAdvanceHandler();
+                } else {
+                    typingFeedback.textContent = `Correct! Now find the remaining ${remainingKanaToType.length}.`;
+                    typingInput.value = '';
+                }
+            } else {
+                isAnswered = true;
+                typingInput.disabled = true;
+                typingInput.classList.add('incorrect-input');
+
+                const allAnswers = remainingKanaToType.map(r => `${r.kana} (${r.romaji})`).join(', ');
+                typingFeedback.textContent = `Incorrect. The answer(s) were: ${allAnswers}`;
+                
+                incorrectAnswerCount++;
+                const failedCard = sessionKanji.shift();
+                sessionKanji.push(failedCard);
+                kanjiCard.classList.add('flipped');
+                updateProgress();
+                setupAdvanceHandler();
+            }
+        }
+
+        // --- CORE APP LOGIC --- //
+        function loadNewKanji() {
+            if (sessionKanji.length === 0 && initialSessionSize > 0) {
+                const finalPercentage = statsPercentage.textContent;
+                const finalCorrect = statsCorrect.textContent;
+                const finalIncorrect = statsIncorrect.textContent;
+                
+                kanjiCard.classList.add('flipped');
+                kanjiText.style.fontSize = '8rem';
+                kanjiText.textContent = `${finalPercentage}%`;
+                kanjiKana.textContent = "Final Score";
+                kanjiEnglish.textContent = `Correct: ${finalCorrect} | Incorrect: ${finalIncorrect}`;
+                
+                optionsGrid.innerHTML = '';
+                typingInputContainer.style.display = 'none';
+                kanjiExamples.innerHTML = '';
+                document.removeEventListener('keydown', globalAdvanceHandler);
+                document.removeEventListener('click', globalAdvanceHandler);
+                return;
+            }
+
+            isAnswered = false;
+            userSelections = new Set();
+            kanjiCard.classList.remove('flipped');
+            optionsGrid.innerHTML = '';
+            document.removeEventListener('keydown', globalAdvanceHandler);
+            document.removeEventListener('click', globalAdvanceHandler);
+            typingInput.removeEventListener('keydown', handleTypingAnswer);
+
+            currentKanji = sessionKanji[0];
+            
+            updateAnswerControls();
+            updateKanjiDisplay();
+
+            if (selectedAnswerMethod === 'typing' && selectedDisplayType === 'kanji' && selectedAnswerType === 'kana') {
+                optionsGrid.style.display = 'none';
+                typingInputContainer.style.display = 'flex';
+                setupTypingQuestion();
+                typingInput.addEventListener('keydown', handleTypingAnswer);
+            } else {
+                optionsGrid.style.display = 'grid';
+                typingInputContainer.style.display = 'none';
+                if (selectedAnswerType === 'kana') {
+                    generateKanaQuestion();
+                } else {
+                    const correctOption = currentKanji;
+                    const incorrectOptions = getRandomIncorrectOptions(currentKanji, 8);
+                    let allOptions = [correctOption, ...incorrectOptions];
+                    shuffleArray(allOptions);
+                    renderStandardAnswerOptions(allOptions); 
+                }
+            }
+        }
+
+        function updateKanjiDisplay() {
+            kanjiText.textContent = '';
+            kanjiKana.textContent = '';
+            kanjiEnglish.textContent = '';
+            kanjiExamples.innerHTML = '';
+            kanjiText.style.fontSize = '8rem';
+
+            if (currentKanji.examples) {
+                currentKanji.examples.forEach(ex => {
+                    const exContainer = document.createElement('div');
+                    exContainer.className = 'example-item';
+                    exContainer.innerHTML = `<span class="jp-example">${ex.japanese}</span><span class="en-example">${ex.english}</span>`;
+                    kanjiExamples.appendChild(exContainer);
+                });
+            }
+
+            switch (selectedDisplayType) {
+                case 'kanji':
+                    kanjiText.textContent = currentKanji.kanji;
+                    kanjiKana.textContent = currentKanji.kana;
+                    kanjiEnglish.textContent = currentKanji.english;
+                    break;
+                case 'kana':
+                    kanjiText.textContent = currentKanji.kana;
+                    kanjiText.style.fontSize = '3rem';
+                    kanjiKana.textContent = currentKanji.kanji;
+                    kanjiEnglish.textContent = currentKanji.english;
+                    break;
+                case 'english':
+                    kanjiText.textContent = currentKanji.english;
+                    kanjiText.style.fontSize = '3rem';
+                    kanjiKana.textContent = currentKanji.kanji;
+                    kanjiEnglish.textContent = currentKanji.kana;
+                    break;
+            }
+        }
+
+        // --- CONTROLS AND STATS --- //
+        function updateAnswerControls() {
+            answerTypeGroup.innerHTML = '';
+            const labelMap = {
+                kanji: 'Kanji',
+                kana: 'Kana',
+                english: 'English'
+            };
+
+            let availableAnswerTypes;
+            switch (selectedDisplayType) {
+                case 'kanji': availableAnswerTypes = ['kana', 'english']; break;
+                case 'kana': availableAnswerTypes = ['kanji', 'english']; break;
+                case 'english': availableAnswerTypes = ['kanji', 'kana']; break;
+            }
+            if (!availableAnswerTypes.includes(selectedAnswerType)) {
+                selectedAnswerType = availableAnswerTypes[0];
+            }
+            availableAnswerTypes.forEach(type => {
+                const label = document.createElement('label');
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'answer-type';
+                input.value = type;
+                if (type === selectedAnswerType) input.checked = true;
+                const customRadio = document.createElement('span');
+                customRadio.classList.add('custom-radio');
+                label.appendChild(input);
+                label.appendChild(customRadio);
+                const typeLabel = labelMap[type];
+                label.appendChild(document.createTextNode(typeLabel));
+                input.addEventListener('change', (event) => {
+                    selectedAnswerType = event.target.value;
+                    if (!isAnswered) loadNewKanji();
+                });
+                answerTypeGroup.appendChild(label);
+            });
+            document.getElementById('answer-method-typing').disabled = !(selectedDisplayType === 'kanji' && selectedAnswerType === 'kana');
+        }
+
+        function setupAnswerMethodControls() {
+            const methods = [
+                { value: 'multiple-choice', label: 'Multiple Choice' },
+                { value: 'typing', label: 'Typing' }
+            ];
+            answerMethodGroup.innerHTML = '';
+            methods.forEach(method => {
+                const label = document.createElement('label');
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'answer-method';
+                input.id = `answer-method-${method.value}`;
+                input.value = method.value;
+                if (method.value === selectedAnswerMethod) input.checked = true;
+                
+                const customRadio = document.createElement('span');
+                customRadio.classList.add('custom-radio');
+                
+                label.appendChild(input);
+                label.appendChild(customRadio);
+                label.appendChild(document.createTextNode(method.label));
+                
+                input.addEventListener('change', (event) => {
+                    selectedAnswerMethod = event.target.value;
+                    restartFlashcard(); 
+                });
+                answerMethodGroup.appendChild(label);
+            });
+        }
+
+        function updateStats() {
+            statsCorrect.textContent = correctlyAnsweredCount;
+            statsIncorrect.textContent = incorrectAnswerCount;
+            statsRemaining.textContent = sessionKanji.length;
+            
+            const totalAttempts = correctlyAnsweredCount + incorrectAnswerCount;
+            const accuracy = totalAttempts > 0 ? Math.round((correctlyAnsweredCount / totalAttempts) * 100) : 0;
+            statsPercentage.textContent = accuracy;
+        }
+
+        function updateProgress() {
+            const completionPercentage = initialSessionSize > 0 ? (correctlyAnsweredCount / initialSessionSize) * 100 : 0;
+            progressElement.style.width = `${completionPercentage}%`;
+            updateStats();
+        }
+
+        function restartFlashcard() {
+            correctlyAnsweredCount = 0;
+            incorrectAnswerCount = 0;
+            
+            if (rangeModeToggle.checked) {
+                let start = parseInt(rangeStartInput.value, 10);
+                let end = parseInt(rangeEndInput.value, 10);
+
+                if (isNaN(start) || isNaN(end) || start < 1 || end < start || start > kanjiData.length) {
+                    sessionKanji = [];
+                    initialSessionSize = 0;
+                } else {
+                    start = start - 1; // Adjust for 0-based index
+                    end = Math.min(end, kanjiData.length);
+                    rangeStartInput.value = start + 1;
+                    rangeEndInput.value = end;
+                    sessionKanji = kanjiData.slice(start, end);
+                    shuffleArray(sessionKanji);
+                    initialSessionSize = sessionKanji.length;
+                }
+            } else {
+                let sessionSize;
+                const sessionSizeValue = sessionSizeSelect.value;
+
+                if (sessionSizeValue === 'custom') {
+                    const customSize = parseInt(customSessionSizeInput.value, 10);
+                    if (isNaN(customSize) || customSize <= 0) {
+                        return; 
+                    }
+                    sessionSize = Math.min(customSize, kanjiData.length);
+                    customSessionSizeInput.value = sessionSize;
+                } else {
+                    sessionSize = sessionSizeValue === 'all' ? kanjiData.length : parseInt(sessionSizeValue, 10);
+                }
+                
+                initialSessionSize = sessionSize;
+
+                let sourceDeck = [...kanjiData];
+                if (isRandomized) {
+                    shuffleArray(sourceDeck);
+                    sessionKanji = sourceDeck.slice(0, sessionSize);
+                } else {
+                    let sessionDeck = sourceDeck.slice(0, sessionSize);
+                    shuffleArray(sessionDeck);
+                    sessionKanji = sessionDeck;
+                }
+            }
+            
+            updateProgress();
+            loadNewKanji();
+        }
+
+        function globalAdvanceHandler(event) {
+            if (event.type === 'click' && event.target.closest('.controls-container, .option-button, #typing-input')) {
+                return;
+            }
+            loadNewKanji();
+        }
+
+        function setupAdvanceHandler() {
+             setTimeout(() => {
+                 document.addEventListener('keydown', globalAdvanceHandler, { once: true });
+                 document.addEventListener('click', globalAdvanceHandler, { once: true });
+            }, 600);
+        }
+
+        // --- EVENT LISTENERS & INITIALIZATION --- //
+        restartButton.addEventListener('click', restartFlashcard);
+        displayRadios.forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                selectedDisplayType = event.target.value;
+                updateAnswerControls();
+                if (!isAnswered) loadNewKanji();
+            });
+        });
+
+        sessionSizeSelect.addEventListener('change', () => {
+            if (sessionSizeSelect.value === 'custom') {
+                customSessionSizeInput.style.display = 'inline-block';
+                customSessionSizeInput.value = '';
+                customSessionSizeInput.focus();
+            } else {
+                customSessionSizeInput.style.display = 'none';
+                restartFlashcard();
+            }
+        });
+
+        customSessionSizeInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                restartFlashcard();
+                customSessionSizeInput.blur();
+            }
+        });
+        customSessionSizeInput.addEventListener('change', restartFlashcard);
+
+        randomizeToggle.addEventListener('change', (event) => {
+            isRandomized = event.target.checked;
+            restartFlashcard();
+        });
+
+        rangeModeToggle.addEventListener('change', () => {
+            const isRangeMode = rangeModeToggle.checked;
+            rangeControls.style.display = isRangeMode ? 'flex' : 'none';
+            sessionSizeSelect.disabled = isRangeMode;
+            customSessionSizeInput.disabled = isRangeMode;
+            randomizeToggle.disabled = isRangeMode;
+            if (isRangeMode) {
+                rangeStartInput.focus();
+            } else {
+                restartFlashcard();
+            }
+        });
+
+        const restartFromRange = () => {
+            if (rangeModeToggle.checked) {
+                restartFlashcard();
+            }
+        };
+        rangeStartInput.addEventListener('change', restartFromRange);
+        rangeEndInput.addEventListener('change', restartFromRange);
+        rangeEndInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                restartFromRange();
+                rangeEndInput.blur();
+            }
+        });
+
+        kanjiCard.addEventListener('click', () => {
+            if (!isAnswered) kanjiCard.classList.toggle('flipped');
+        });
+
+        window.onload = () => {
+            initializeKana();
+            setupAnswerMethodControls();
+            restartFlashcard();
+        };
+    </script>
+</body>
+</html>

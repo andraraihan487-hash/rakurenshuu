@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary Flashcard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/wanakana"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #222;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .flashcard-container {
+            background-color: #222;
+            padding: 2rem;
+            border-radius: 1.5rem;
+        
+            text-align: center;
+            max-width: 1300px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            color: white;
+        }
+        .vocab-card {
+            min-height: 300px;
+            background-color: #222;
+            border-radius: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+        }
+        .vocab-japanese {
+            font-size: 5rem;
+            font-weight: 700;
+            color: white;
+            transition: transform 0.3s ease;
+        }
+        .vocab-reading { 
+            font-size: 2rem;
+            color: white;
+            position: absolute;
+            top: 1rem;
+            left: 1.5rem;
+            opacity: 0;
+            
+        }
+        .vocab-english {
+            font-size: 1.5rem;
+            color: white;
+            position: absolute;
+            bottom: 1rem;
+            left: 1.5rem;
+            right: 1.5rem;
+            opacity: 0;
+            
+        }
+
+        .vocab-card.flipped .vocab-reading,
+        .vocab-card.flipped .vocab-english {
+            opacity: 1;
+        }
+        .vocab-card.flipped .vocab-japanese {
+            transform: scale(0.8);
+            color: #cbd5e0;
+        }
+        .vocab-card:hover {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .option-button {
+            background-color: #edf2f7;
+            color: #2d3748;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+        .option-button:hover:not(.correct):not(.incorrect) {
+            background-color: #e2e8f0;
+            border-color: #cbd5e0;
+        }
+        .option-button.correct {
+            background-color: #48bb78;
+            color: white;
+            border-color: #38a169;
+        }
+        .option-button.incorrect {
+            background-color: #f56565;
+            color: white;
+            border-color: #e53e3e;
+        }
+        #stats-container {
+            font-size: 1.1rem;
+        }
+        .progress-bar {
+            height: 8px;
+            background-color: #cbd5e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            background-color: #4c51bf;
+            transition: width 0.3s ease;
+        }
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem 1.5rem;
+            color: white;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: nowrap;
+            color: white;
+        }
+        .radio-group {
+            display: flex;
+            gap: 1rem;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        .radio-group input[type="radio"] {
+            display: none;
+        }
+        .radio-group .custom-radio {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #a0aec0;
+            display: inline-block;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        .radio-group input[type="radio"]:checked + .custom-radio {
+            background-color: #4c51bf;
+            border-color: #4c51bf;
+        }
+        .radio-group input[type="radio"]:checked + .custom-radio::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #typing-input-container {
+            padding: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        #typing-input {
+            font-size: 1.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            border: 2px solid #cbd5e0;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: black;
+        }
+        #typing-input:focus {
+            border-color: #4c51bf;
+            box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.3);
+        }
+        #typing-input.correct-input {
+             border-color: #48bb78;
+             background-color: #f0fff4;
+        }
+        #typing-input.incorrect-input {
+             border-color: #f56565;
+             background-color: #fff5f5;
+        }
+        #typing-feedback {
+            font-size: 1.1rem;
+            color: white;
+            font-weight: 600;
+            min-height: 1.5rem;
+        }
+        .stats-correct {
+            color: #48bb78;
+            font-weight: bold;
+        }
+        .stats-incorrect {
+            color: #f56565;
+            font-weight: bold;
+        }
+        #session-size{
+            color: #222;
+            
+        }
+        #custom-session-size{
+            color: #222;
+        }
+        #range-start{
+            color: #222;
+        }
+        #range-end{
+            color: #222;
+        }
+    </style>
+</head>
+<body>
+    <a href="../homepage.html" class="absolute top-6 left-6 text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-2 font-semibold z-10 no-underline">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+        </svg>
+        Back
+    </a>
+    <div class="flashcard-container">
+        <h1 class="text-3xl font-bold">N5 VOCABULARY</h1>
+
+        <div id="vocab-card" class="vocab-card">
+            <span id="vocab-japanese" class="vocab-japanese"></span>
+            <span id="vocab-reading" class="vocab-reading"></span>
+            <span id="vocab-english" class="vocab-english"></span>
+        </div>
+
+        <div id="answer-area">
+            <div id="options-grid" class="options-grid"></div>
+            <div id="typing-input-container" style="display: none;">
+                <p id="typing-feedback"></p>
+                <input type="text" id="typing-input" placeholder="Type romaji and press Enter" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            </div>
+        </div>
+
+        <div id="stats-container" class="flex flex-wrap justify-between items-center w-full mb-1">
+            <div class="flex gap-x-4">
+                <span class="stats-correct">Correct: <span id="stats-correct">0</span></span>
+                <span class="stats-incorrect">Incorrect: <span id="stats-incorrect">0</span></span>
+            </div>
+            <div class="flex gap-x-4">
+                <span class="font-bold">Remaining: <span id="stats-remaining">0</span></span>
+                <span class="font-bold"><span id="stats-percentage">0</span>%</span>
+            </div>
+        </div>
+        <div class="progress-bar">
+            <div id="progress" class="progress" style="width: 0%;"></div>
+        </div>
+        
+        <div class="controls-container mt-2">
+            <div class="control-group">
+                <span class="font-semibold">Session Size:</span>
+                <select id="session-size" class="p-2 border rounded-md">
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="all">All</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <input type="number" id="custom-session-size" class="p-2 border rounded-md w-24 text-center" style="display: none;" placeholder="Size" min="1">
+                <div class="control-group ml-2">
+                    <input type="checkbox" id="randomize-toggle" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                    <label for="randomize-toggle" class="font-semibold cursor-pointer">Randomize</label>
+                </div>
+            </div>
+             <div class="control-group">
+                <input type="checkbox" id="range-mode-toggle" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                <label for="range-mode-toggle" class="font-semibold cursor-pointer">Practice a Range</label>
+                <div id="range-controls" class="flex items-center gap-2" style="display: none;">
+                    <input type="number" id="range-start" class="p-2 border rounded-md w-24 text-center" placeholder="Start" min="1">
+                    <span class="">-</span>
+                    <input type="number" id="range-end" class="p-2 border rounded-md w-24 text-center" placeholder="End" min="1">
+                </div>
+            </div>
+             <div class="control-group">
+                <span class="font-semibold">Method:</span>
+                <div class="radio-group" id="answer-method-group"></div>
+            </div>
+            <div class="control-group">
+                <span class="font-semibold">Show:</span>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="display-type" value="japanese" checked>
+                        <span class="custom-radio"></span>
+                        漢字　Kanji
+                    </label>
+                    <label>
+                        <input type="radio" name="display-type" value="reading">
+                        <span class="custom-radio"></span>
+                        Reading
+                    </label>
+                    <label>
+                        <input type="radio" name="display-type" value="english">
+                        <span class="custom-radio"></span>
+                        English
+                    </label>
+                </div>
+            </div>
+            <div class="control-group">
+                <span class="font-semibold">Answer with:</span>
+                <div class="radio-group" id="answer-type-group"></div>
+            </div>
+            <button id="restart-button" class="bg-indigo-500 text-white font-bold py-2 px-4 rounded-full shadow hover:bg-indigo-600 transition duration-200">
+                Restart Session
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const vocabData = [
+            { "japanese": "浴びる", "reading": "あびる", "english": "to bathe, to shower" },
+            { "japanese": "危ない", "reading": "あぶない", "english": "dangerous" },
+            { "japanese": "あっち", "reading": "あっち", "english": "over there" },
+            { "japanese": "あちら", "reading": "あちら", "english": "there" },
+            { "japanese": "上げる", "reading": "あげる", "english": "to raise; to elevate; to give" },
+            { "japanese": "赤", "reading": "あか", "english": "red; crimson; scarlet" },
+            { "japanese": "赤い", "reading": "あかい", "english": "red; crimson; scarlet" },
+            { "japanese": "明るい", "reading": "あかるい", "english": "bright; light" },
+            { "japanese": "開ける", "reading": "あける", "english": "to open (a door, etc.); to unwrap (e.g. parcel, package); to unlock" },
+            { "japanese": "秋", "reading": "あき", "english": "autumn; fall" },
+            { "japanese": "開く", "reading": "あく", "english": "to open (e.g. doors, business, etc)" },
+            { "japanese": "甘い", "reading": "あまい", "english": "sweet; sweet-tasting; sugary; naive; indulgent" },
+            { "japanese": "雨", "reading": "あめ", "english": "rain" },
+            { "japanese": "飴", "reading": "あめ", "english": "candy" },
+            { "japanese": "あなた", "reading": "あなた", "english": "you" },
+            { "japanese": "姉", "reading": "あね", "english": "older sister; elder sister" },
+            { "japanese": "兄", "reading": "あに", "english": "elder brother; older brother" },
+            { "japanese": "あの", "reading": "あの", "english": "that" },
+            { "japanese": "青", "reading": "あお", "english": "blue; azure" },
+            { "japanese": "青い", "reading": "あおい", "english": "blue; azure" },
+            { "japanese": "アパート", "reading": "アパート", "english": "apartment" },
+            { "japanese": "洗う", "reading": "あらう", "english": "to wash" },
+            { "japanese": "あれ", "reading": "あれ", "english": "that" },
+            { "japanese": "ある", "reading": "ある", "english": "to be, to have" },
+            { "japanese": "歩く", "reading": "あるく", "english": "to walk" },
+            { "japanese": "朝", "reading": "あさ", "english": "morning" },
+            { "japanese": "朝ご飯", "reading": "あさごはん", "english": "breakfast" },
+            { "japanese": "明後日", "reading": "あさって", "english": "day after tomorrow" },
+            { "japanese": "足", "reading": "あし", "english": "foot; leg; paw; arm" },
+            { "japanese": "明日", "reading": "あした", "english": "tomorrow" },
+            { "japanese": "遊ぶ", "reading": "あそぶ", "english": "to play; to enjoy oneself" },
+            { "japanese": "あそこ", "reading": "あそこ", "english": "over there" },
+            { "japanese": "頭", "reading": "あたま", "english": "head" },
+            { "japanese": "新しい", "reading": "あたらしい", "english": "new; novel; fresh; recent; latest" },
+            { "japanese": "暖かい", "reading": "あたたかい", "english": "warm" },
+            { "japanese": "後", "reading": "あと", "english": "behind; after; remainder; left; also" },
+            { "japanese": "暑い", "reading": "あつい", "english": "hot; sultry" },
+            { "japanese": "厚い", "reading": "あつい", "english": "thick" },
+            { "japanese": "熱い", "reading": "あつい", "english": "hot" },
+            { "japanese": "会う", "reading": "あう", "english": "to meet; to encounter; to see" },
+            { "japanese": "晩ご飯", "reading": "ばんごはん", "english": "dinner; evening meal" },
+            { "japanese": "番号", "reading": "ばんごう", "english": "number" },
+            { "japanese": "バス", "reading": "バス", "english": "bus" },
+            { "japanese": "バター", "reading": "バター", "english": "butter" },
+            { "japanese": "ベッド", "reading": "ベッド", "english": "bed" },
+            { "japanese": "勉強", "reading": "べんきょう", "english": "to study" },
+            { "japanese": "便利", "reading": "べんり", "english": "convenient; handy; useful" },
+            { "japanese": "ボールペン", "reading": "ボールペン", "english": "ball-point pen" },
+            { "japanese": "ボタン", "reading": "ボタン", "english": "button" },
+            { "japanese": "帽子", "reading": "ぼうし", "english": "hat; cap" },
+            { "japanese": "文章", "reading": "ぶんしょう", "english": "sentence" },
+            { "japanese": "豚肉", "reading": "ぶたにく", "english": "pork" },
+            { "japanese": "病院", "reading": "びょういん", "english": "hospital" },
+            { "japanese": "病気", "reading": "びょうき", "english": "illness; disease; sickness" },
+            { "japanese": "茶色", "reading": "ちゃいろ", "english": "brown" },
+            { "japanese": "茶碗", "reading": "ちゃわん", "english": "rice bowl; tea cup; teacup" },
+            { "japanese": "父", "reading": "ちち", "english": "father" },
+            { "japanese": "違う", "reading": "ちがう", "english": "to differ" },
+            { "japanese": "小さい", "reading": "ちいさい", "english": "small; little; tiny" },
+            { "japanese": "小さな", "reading": "ちいさな", "english": "small; little; tiny" },
+            { "japanese": "近い", "reading": "ちかい", "english": "near; close" },
+            { "japanese": "地下鉄", "reading": "ちかてつ", "english": "subway; underground train" },
+            { "japanese": "地図", "reading": "ちず", "english": "map" },
+            { "japanese": "ちょっと", "reading": "ちょっと", "english": "a little" },
+            { "japanese": "丁度", "reading": "ちょうど", "english": "exactly" },
+            { "japanese": "台所", "reading": "だいどころ", "english": "kitchen" },
+            { "japanese": "大学", "reading": "だいがく", "english": "university; college" },
+            { "japanese": "大丈夫", "reading": "だいじょうぶ", "english": "OK; okay; alright; problem free" },
+            { "japanese": "大好き", "reading": "だいすき", "english": "love; like; like very much" },
+            { "japanese": "だんだん", "reading": "だんだん", "english": "gradually" },
+            { "japanese": "誰", "reading": "だれ", "english": "who" },
+            { "japanese": "誰か", "reading": "だれか", "english": "someone; somebody" },
+            { "japanese": "出す", "reading": "だす", "english": "to take out; to get out; to put out; to reveal" },
+            { "japanese": "出口", "reading": "でぐち", "english": "exit; gateway; way out" },
+            { "japanese": "出かける", "reading": "でかける", "english": "to go out; to leave; to depart" },
+            { "japanese": "電気", "reading": "でんき", "english": "electricity" },
+            { "japanese": "電車", "reading": "でんしゃ", "english": "train; electric train" },
+            { "japanese": "電話", "reading": "でんわ", "english": "telephone (call / device); phone call" },
+            { "japanese": "デパート", "reading": "デパート", "english": "department store" },
+            { "japanese": "出る", "reading": "でる", "english": "to leave; to exit; to appear; to go out" },
+            { "japanese": "ドア", "reading": "ドア", "english": "door" },
+            { "japanese": "どっち", "reading": "どっち", "english": "which; which one" },
+            { "japanese": "どちら", "reading": "どちら", "english": "which of two" },
+            { "japanese": "どこ", "reading": "どこ", "english": "where; what place" },
+            { "japanese": "どなた", "reading": "どなた", "english": "who" },
+            { "japanese": "どの", "reading": "どの", "english": "which" },
+            { "japanese": "どれ", "reading": "どれ", "english": "which (of three or more)" },
+            { "japanese": "どう", "reading": "どう", "english": "how; in what way; how about" },
+            { "japanese": "動物", "reading": "どうぶつ", "english": "animal" },
+            { "japanese": "どうも", "reading": "どうも", "english": "thank you; thanks" },
+            { "japanese": "どうぞ", "reading": "どうぞ", "english": "please" },
+            { "japanese": "土曜日", "reading": "どようび", "english": "Saturday" },
+            { "japanese": "絵", "reading": "え", "english": "picture" },
+            { "japanese": "ええ", "reading": "ええ", "english": "yes; that is correct; right" },
+            { "japanese": "映画", "reading": "えいが", "english": "movie; film" },
+            { "japanese": "映画館", "reading": "えいがかん", "english": "movie theater; cinema" },
+            { "japanese": "英語", "reading": "えいご", "english": "English language" },
+            { "japanese": "駅", "reading": "えき", "english": "station" },
+            { "japanese": "鉛筆", "reading": "えんぴつ", "english": "pencil" },
+            { "japanese": "エレベーター", "reading": "エレベーター", "english": "elevator" }, //100
+            { "japanese": "フィルム", "reading": "フィルム", "english": "film" },  
+            { "japanese": "フォーク", "reading": "フォーク", "english": "fork" }, 
+            { "japanese": "服", "reading": "ふく", "english": "clothes" },
+            { "japanese": "吹く", "reading": "ふく", "english": "to blow (of the wind)" },
+            { "japanese": "降る", "reading": "ふる", "english": "to fall" },
+            { "japanese": "古い", "reading": "ふるい", "english": "old (not used for people)" },
+            { "japanese": "二人", "reading": "ふたり", "english": "two people; pair; couple" },
+            { "japanese": "二つ", "reading": "ふたつ", "english": "two; 2" },
+            { "japanese": "太い", "reading": "ふとい", "english": "fat; thick" },
+            { "japanese": "二日", "reading": "ふつか", "english": "the second day of the month / 2 days" },
+            { "japanese": "封筒", "reading": "ふうとう", "english": "envelope" },
+            { "japanese": "冬", "reading": "ふゆ", "english": "winter" },
+            { "japanese": "外国", "reading": "がいこく", "english": "foreign country" },
+            { "japanese": "外国人", "reading": "がいこくじん", "english": "foreigner; foreign citizen; foreign national; alien; non-Japanese" },
+            { "japanese": "学校", "reading": "がっこう", "english": "school" },
+            { "japanese": "学生", "reading": "がくせい", "english": "student" },
+            { "japanese": "玄関", "reading": "げんかん", "english": "entrance" },
+            { "japanese": "元気", "reading": "げんき", "english": "lively; full of spirit; energetic; healthy" },
+            { "japanese": "月曜日", "reading": "げつようび", "english": "Monday" },
+            { "japanese": "銀行", "reading": "ぎんこう", "english": "bank" },
+            { "japanese": "ギター", "reading": "ギター", "english": "guitar" },
+            { "japanese": "五", "reading": "ご", "english": "five; 5" },
+            { "japanese": "午後", "reading": "ごご", "english": "afternoon; p.m." },
+            { "japanese": "ご飯", "reading": "ごはん", "english": "cooked rice, meal" },
+            { "japanese": "午前", "reading": "ごぜん", "english": "morning; a.m." },
+            { "japanese": "グラム", "reading": "グラム", "english": "gram" },
+            { "japanese": "牛肉", "reading": "ぎゅうにく", "english": "beef" },
+            { "japanese": "牛乳", "reading": "ぎゅうにゅう", "english": "(cow's) milk" },
+            { "japanese": "歯", "reading": "は", "english": "tooth" },
+            { "japanese": "八", "reading": "はち", "english": "eight: 8" },
+            { "japanese": "葉書", "reading": "はがき", "english": "postcard" },
+            { "japanese": "母", "reading": "はは", "english": "mother" },
+            { "japanese": "はい", "reading": "はい", "english": "yes; that is correct" },
+            { "japanese": "入る", "reading": "はいる", "english": "to enter; to go into" },
+            { "japanese": "灰皿", "reading": "はいざら", "english": "ashtray" },
+            { "japanese": "始まる", "reading": "はじまる", "english": "to begin" },
+            { "japanese": "初めて", "reading": "はじめて", "english": "for the first time" },
+            { "japanese": "箱", "reading": "はこ", "english": "box; crate" },
+            { "japanese": "履く", "reading": "はく", "english": "to wear, to put on trousers" },
+            { "japanese": "半", "reading": "はん", "english": "half; semi-; half-past" },
+            { "japanese": "花", "reading": "はな", "english": "flower" },
+            { "japanese": "鼻", "reading": "はな", "english": "nose" },
+            { "japanese": "話", "reading": "はなし", "english": "talk; speech; chat; conversation" },
+            { "japanese": "話す", "reading": "はなす", "english": "to speak; to talk; to converse" },
+            { "japanese": "半分", "reading": "はんぶん", "english": "half" },
+            { "japanese": "ハンカチ", "reading": "ハンカチ", "english": "handkerchief" },
+            { "japanese": "晴れ", "reading": "はれ", "english": "clear weather" },
+            { "japanese": "晴れる", "reading": "はれる", "english": "to be sunny" },
+            { "japanese": "春", "reading": "はる", "english": "spring; springtime" },
+            { "japanese": "貼る", "reading": "はる", "english": "to stick; to paste" },
+            { "japanese": "箸", "reading": "はし", "english": "chopsticks" },
+            { "japanese": "橋", "reading": "はし", "english": "bridge" },
+            { "japanese": "走る", "reading": "はしる", "english": "to run" },
+            { "japanese": "二十歲", "reading": "はたち", "english": "20 years old; twenty years old" },
+            { "japanese": "働く", "reading": "はたらく", "english": "to work" },
+            { "japanese": "二十日", "reading": "はつか", "english": "twentieth day of the month / 20 days" },
+            { "japanese": "速い", "reading": "はやい", "english": "fast; quick; hasty; brisk" },
+            { "japanese": "早い", "reading": "はやい", "english": "fast; early" },
+            { "japanese": "辺", "reading": "へん", "english": "area" },
+            { "japanese": "下手", "reading": "へた", "english": "unskillful; poor; awkward" },
+            { "japanese": "部屋", "reading": "へや", "english": "room" },
+            { "japanese": "左", "reading": "ひだり", "english": "left; left hand side" },
+            { "japanese": "東", "reading": "ひがし", "english": "east" },
+            { "japanese": "飛行機", "reading": "ひこうき", "english": "airplane; aircraft" },
+            { "japanese": "引く", "reading": "ひく", "english": "to pull" },
+            { "japanese": "弾く", "reading": "ひく", "english": "to play" },
+            { "japanese": "低い", "reading": "ひくい", "english": "short, low" },
+            { "japanese": "暇", "reading": "ひま", "english": "free time" },
+            { "japanese": "広い", "reading": "ひろい", "english": "spacious; vast; wide" },
+            { "japanese": "昼", "reading": "ひる", "english": "noon; midday; daytime; lunch" },
+            { "japanese": "昼ご飯", "reading": "ひるごはん", "english": "lunch" },
+            { "japanese": "人", "reading": "ひと", "english": "person; human" },
+            { "japanese": "一人", "reading": "ひとり", "english": "one person; alone; single" },
+            { "japanese": "一つ", "reading": "ひとつ", "english": "one thing; only" },
+            { "japanese": "ほか", "reading": "ほか", "english": "other (place, thing, person); the rest" },
+            { "japanese": "本", "reading": "ほん", "english": "book; volume; script" },
+            { "japanese": "本棚", "reading": "ほんだな", "english": "bookshelf; bookcase" },
+            { "japanese": "本当", "reading": "ほんとう", "english": "truth; reality; actuality; fact" },
+            { "japanese": "欲しい", "reading": "ほしい", "english": "want" },
+            { "japanese": "細い", "reading": "ほそい", "english": "thin; slender" },
+            { "japanese": "ホテル", "reading": "ホテル", "english": "hotel" },
+            { "japanese": "百", "reading": "ひゃく", "english": "100; hundred" },
+            { "japanese": "いち", "reading": "いち", "english": "one; best; first; foremost; start" },
+            { "japanese": "一番", "reading": "いちばん", "english": "number one; first; 1st, first place; best; most" },
+            { "japanese": "一日", "reading": "いちにち", "english": "one day, all day" },
+            { "japanese": "家", "reading": "いえ", "english": "house, residence, family" },
+            { "japanese": "いかが", "reading": "いかが", "english": "how; in what way; how about" },
+            { "japanese": "池", "reading": "いけ", "english": "pond" },
+            { "japanese": "行く", "reading": "いく", "english": "to go; to move" },
+            { "japanese": "いくら", "reading": "いくら", "english": "how much?; how many?" },
+            { "japanese": "いくつ", "reading": "いくつ", "english": "how many?,how old?" },
+            { "japanese": "今", "reading": "いま", "english": "now; the present time; soon" },
+            { "japanese": "意味", "reading": "いみ", "english": "meaning; significance; sense" },
+            { "japanese": "妹", "reading": "いもうと", "english": "younger sister" },
+            { "japanese": "犬", "reading": "いぬ", "english": "dog" },
+            { "japanese": "入れる", "reading": "いれる", "english": "to put in; to let in; to take in; to bring in; to insert; to install" },
+            { "japanese": "入口", "reading": "いりぐち", "english": "entrance; entry; gate" },
+            { "japanese": "色", "reading": "いろ", "english": "colour; color" },
+            { "japanese": "色々", "reading": "いろいろ", "english": "various" },
+            { "japanese": "要る", "reading": "いる", "english": "to be needed" }, //200
+            { "japanese": "居る", "reading": "いる", "english": "to be, to have" },
+            { "japanese": "医者", "reading": "いしゃ", "english": "(medical) doctor; physician" },
+            { "japanese": "忙しい", "reading": "いそがしい", "english": "busy" },
+            { "japanese": "一緒", "reading": "いっしょ", "english": "together; at the same time; same; identical" },
+            { "japanese": "椅子", "reading": "いす", "english": "chair" },
+            { "japanese": "痛い", "reading": "いたい", "english": "painful; sore" },
+            { "japanese": "いつ", "reading": "itsu", "english": "when" },
+            { "japanese": "五日", "reading": "いつか", "english": "the fifth day of the month / 5 days" },
+            { "japanese": "五つ", "reading": "いつつ", "english": "five; 5" },
+            { "japanese": "言う", "reading": "いう", "english": "to say; to call" },
+            { "japanese": "嫌", "reading": "いや", "english": "unpleasant" },
+            { "japanese": "じゃあ", "reading": "jaa", "english": "then; well; so; well then" },
+            { "japanese": "字引", "reading": "じびき", "english": "dictionary" },
+            { "japanese": "自分", "reading": "じぶん", "english": "myself; yourself; oneself; himself; herself; i; me" },
+            { "japanese": "自動車", "reading": "じどうしゃ", "english": "automobile; motorcar; motor vehicle; car" },
+            { "japanese": "時間", "reading": "じかん", "english": "time; hour(s)" },
+            { "japanese": "辞書", "reading": "じしょ", "english": "dictionary" },
+            { "japanese": "自転車", "reading": "じてんしゃ", "english": "bicycle" },
+            { "japanese": "丈夫", "reading": "じょうぶ", "english": "strong, durable" },
+            { "japanese": "上手", "reading": "じょうず", "english": "skillful; skilled; proficient; good (at)" },
+            { "japanese": "授業", "reading": "じゅぎょう", "english": "lesson; class work" },
+            { "japanese": "十", "reading": "じゅう", "english": "ten; 10" },
+            { "japanese": "かばん", "reading": "kaban", "english": "bag; basket" },
+            { "japanese": "花瓶", "reading": "かびん", "english": "a vase" },
+            { "japanese": "角", "reading": "かど", "english": "a corner; angle" },
+            { "japanese": "帰る", "reading": "かえる", "english": "to go back" },
+            { "japanese": "返す", "reading": "かえす", "english": "to return something" },
+            { "japanese": "鍵", "reading": "かぎ", "english": "key" },
+            { "japanese": "階段", "reading": "かいだん", "english": "stairs; stairway; staircase" },
+            { "japanese": "買い物", "reading": "かいもの", "english": "shopping; purchased goods" },
+            { "japanese": "会社", "reading": "かいしゃ", "english": "company; corporation" },
+            { "japanese": "掛かる", "reading": "かかる", "english": "to take (a resource, e.g. time or money)" },
+            { "japanese": "掛ける", "reading": "かける", "english": "to hang up; to make (a call);" },
+            { "japanese": "書く", "reading": "かく", "english": "to write; to compose; to pen; to draw" },
+            { "japanese": "カメラ", "reading": "kamera", "english": "camera" },
+            { "japanese": "紙", "reading": "かみ", "english": "paper" },
+            { "japanese": "漢字", "reading": "かんじ", "english": "kanji" },
+            { "japanese": "カップ", "reading": "kappu", "english": "cup" },
+            { "japanese": "体", "reading": "からだ", "english": "body" },
+            { "japanese": "辛い", "reading": "からい", "english": "spicy" },
+            { "japanese": "カレー", "reading": "karee", "english": "curry" },
+            { "japanese": "カレンダー", "reading": "karendaa", "english": "calendar" },
+            { "japanese": "借りる", "reading": "かりる", "english": "to borrow" },
+            { "japanese": "軽い", "reading": "かるい", "english": "light" },
+            { "japanese": "傘", "reading": "かさ", "english": "umbrella" },
+            { "japanese": "貸す", "reading": "かす", "english": "to lend; to loan" },
+            { "japanese": "方", "reading": "かた", "english": "way of doing something" },
+            { "japanese": "家庭", "reading": "かてい", "english": "household" },
+            { "japanese": "買う", "reading": "かう", "english": "to buy; to purchase" },
+            { "japanese": "川", "reading": "かわ", "english": "river; stream" },
+            { "japanese": "可愛い", "reading": "かわいい", "english": "cute" },
+            { "japanese": "火曜日", "reading": "かようび", "english": "Tuesday" },
+            { "japanese": "風", "reading": "かぜ", "english": "wind" },
+            { "japanese": "風邪", "reading": "かぜ", "english": "a cold" },
+            { "japanese": "家族", "reading": "かぞく", "english": "family; members of a family" },
+            { "japanese": "警官", "reading": "けいかん", "english": "policeman; police officer" },
+            { "japanese": "結婚", "reading": "kekkon", "english": "marriage" },
+            { "japanese": "結構", "reading": "kekkou", "english": "splendid, enough" },
+            { "japanese": "今朝", "reading": "けさ", "english": "this morning" },
+            { "japanese": "消す", "reading": "けす", "english": "to erase, to turn off power" },
+            { "japanese": "木", "reading": "き", "english": "tree; shrub; bush; wood; timber" },
+            { "japanese": "消える", "reading": "きえる", "english": "to disappear" },
+            { "japanese": "黄色い", "reading": "きいろい", "english": "yellow" },
+            { "japanese": "聞く", "reading": "きく", "english": "to hear; to listen (to music); to ask; to learn of" },
+            { "japanese": "昨日", "reading": "きのう", "english": "yesterday" },
+            { "japanese": "金曜日", "reading": "きんようび", "english": "Friday" },
+            { "japanese": "切符", "reading": "きっぷ", "english": "ticket" },
+            { "japanese": "嫌い", "reading": "きらい", "english": "hate" },
+            { "japanese": "綺麗", "reading": "きれい", "english": "pretty; lovely; beautiful" },
+            { "japanese": "キログラム", "reading": "kiro guramu", "english": "kilogram" },
+            { "japanese": "キロメートル", "reading": "kiro meetoru", "english": "kilometer" },
+            { "japanese": "切る", "reading": "きる", "english": "to cut" },
+            { "japanese": "着る", "reading": "きる", "english": "to wear" },
+            { "japanese": "喫茶店", "reading": "きっさてん", "english": "coffee shop; tearoom; cafe" },
+            { "japanese": "北", "reading": "きた", "english": "north" },
+            { "japanese": "汚い", "reading": "きたない", "english": "dirty" },
+            { "japanese": "切手", "reading": "きって", "english": "stamp (postage)" },
+            { "japanese": "こっち", "reading": "kocchi", "english": "this person or way" },
+            { "japanese": "こちら", "reading": "kochira", "english": "this way; this direction" },
+            { "japanese": "子供", "reading": "こども", "english": "child" },
+            { "japanese": "声", "reading": "こえ", "english": "voice" },
+            { "japanese": "ここ", "reading": "koko", "english": "here; this place" },
+            { "japanese": "九日", "reading": "ここのか", "english": "ninth day of the month / 9 days" },
+            { "japanese": "九つ", "reading": "ここのつ", "english": "nine; 9" },
+            { "japanese": "困る", "reading": "こまる", "english": "to be troubled" },
+            { "japanese": "今晩", "reading": "こんばん", "english": "tonight; this evening" },
+            { "japanese": "今月", "reading": "こんげつ", "english": "this month" },
+            { "japanese": "こんな", "reading": "konna", "english": "such; like this" },
+            { "japanese": "この", "reading": "kono", "english": "this" },
+            { "japanese": "今週", "reading": "こんしゅう", "english": "this week" },
+            { "japanese": "コーヒー", "reading": "koohii", "english": "Coffee" },
+            { "japanese": "コート", "reading": "kooto", "english": "coat" },
+            { "japanese": "コピー", "reading": "kopii", "english": "copy; photocopy" },
+            { "japanese": "コップ", "reading": "koppu", "english": "glass (drinking vessel); tumbler" },
+            { "japanese": "これ", "reading": "kore", "english": "this" },
+            { "japanese": "答える", "reading": "こたえる", "english": "to answer" },
+            { "japanese": "言葉", "reading": "ことば", "english": "word; words" },
+            { "japanese": "今年", "reading": "ことし", "english": "this year" },
+            { "japanese": "交番", "reading": "こうばん", "english": "police box" },
+            { "japanese": "紅茶", "reading": "こうちゃ", "english": "black tea" }, //300
+            { "japanese": "公園", "reading": "こうえん", "english": "park" },
+            { "japanese": "交差点", "reading": "こうさてん", "english": "intersection" },
+            { "japanese": "口", "reading": "くち", "english": "mouth, opening" },
+            { "japanese": "果物", "reading": "くだもの", "english": "fruit" },
+            { "japanese": "下さい", "reading": "ください", "english": "please" },
+            { "japanese": "曇り", "reading": "くもり", "english": "cloudiness; cloudy weather" },
+            { "japanese": "曇る", "reading": "くもる", "english": "to become cloudy, to become dim" },
+            { "japanese": "国", "reading": "くに", "english": "country; state; region" },
+            { "japanese": "暗い", "reading": "くらい", "english": "dark; gloomy; murky" },
+            { "japanese": "クラス", "reading": "クラス", "english": "class" },
+            { "japanese": "黒", "reading": "くろ", "english": "black" },
+            { "japanese": "黒い", "reading": "くろい", "english": "black" },
+            { "japanese": "来る", "reading": "くる", "english": "to come" },
+            { "japanese": "車", "reading": "くるま", "english": "car; automobile; vehicle" },
+            { "japanese": "薬", "reading": "くすり", "english": "medicine" },
+            { "japanese": "靴", "reading": "くつ", "english": "shoes" },
+            { "japanese": "靴下", "reading": "くつした", "english": "socks" },
+            { "japanese": "去年", "reading": "きょねん", "english": "last year" },
+            { "japanese": "今日", "reading": "きょう", "english": "today; this day" },
+            { "japanese": "兄弟", "reading": "きょうだい", "english": "siblings; brothers and sisters; mate" },
+            { "japanese": "教室", "reading": "きょうしつ", "english": "classroom" },
+            { "japanese": "九", "reading": "きゅう", "english": "nine; 9" },
+            { "japanese": "マッチ", "reading": "マッチ", "english": "match" },
+            { "japanese": "町", "reading": "まち", "english": "town; block; neighborhood" },
+            { "japanese": "窓", "reading": "まど", "english": "window" },
+            { "japanese": "前", "reading": "まえ", "english": "previous; before; in front; ago" },
+            { "japanese": "曲がる", "reading": "まがる", "english": "to turn, to bend" },
+            { "japanese": "毎朝", "reading": "まいあさ", "english": "every morning" },
+            { "japanese": "毎晩", "reading": "まいばん", "english": "every night" },
+            { "japanese": "毎日", "reading": "まいにち", "english": "every day" },
+            { "japanese": "毎週", "reading": "まいしゅう", "english": "every week" },
+            { "japanese": "毎年", "reading": "まいとし / まいねん", "english": "every year; yearly; annually" },
+            { "japanese": "毎月", "reading": "まいつき", "english": "every month; monthly" },
+            { "japanese": "万", "reading": "まん", "english": "10,000; ten thousand" },
+            { "japanese": "万年筆", "reading": "まんねんひつ", "english": "fountain pen" },
+            { "japanese": "丸い", "reading": "まるい", "english": "round, circular" },
+            { "japanese": "真っ直ぐ", "reading": "まっすぐ", "english": "straight ahead, direct" },
+            { "japanese": "待つ", "reading": "まつ", "english": "to wait" },
+            { "japanese": "不味い", "reading": "まずい", "english": "unpleasant" },
+            { "japanese": "目", "reading": "め", "english": "eye" },
+            { "japanese": "メートル", "reading": "メートル", "english": "metre; meter" },
+            { "japanese": "眼鏡", "reading": "めがね", "english": "glasses" },
+            { "japanese": "道", "reading": "みち", "english": "road; street" },
+            { "japanese": "緑", "reading": "みどり", "english": "green" },
+            { "japanese": "磨く", "reading": "みがく", "english": "to polish; to shine; to brush (e.g. teeth)" },
+            { "japanese": "右", "reading": "みぎ", "english": "right; right hand side" },
+            { "japanese": "短い", "reading": "みじかい", "english": "short" },
+            { "japanese": "三日", "reading": "みっか", "english": "the third day of the month / 3 days" },
+            { "japanese": "耳", "reading": "みみ", "english": "ear; hearing" },
+            { "japanese": "南", "reading": "みなみ", "english": "south" },
+            { "japanese": "皆さん", "reading": "みなさん", "english": "everyone" },
+            { "japanese": "みんな", "reading": "みんな", "english": "all; everyone; everybody" },
+            { "japanese": "見る", "reading": "みる", "english": "to see; to look; to watch; to view; to observe" },
+            { "japanese": "店", "reading": "みせ", "english": "store; shop; establishment; restaurant" },
+            { "japanese": "見せる", "reading": "みせる", "english": "to show; to display" },
+            { "japanese": "三つ", "reading": "みっつ", "english": "three; 3" },
+            { "japanese": "水", "reading": "みず", "english": "water; fluid; liquid" },
+            { "japanese": "木曜日", "reading": "もくようび", "english": "Thursday" },
+            { "japanese": "門", "reading": "もん", "english": "gate" },
+            { "japanese": "問題", "reading": "もんだい", "english": "problem; question (e.g. on a test)" },
+            { "japanese": "物", "reading": "もの", "english": "thing" },
+            { "japanese": "持つ", "reading": "もつ", "english": "to hold" },
+            { "japanese": "もっと", "reading": "もっと", "english": "more; longer; further" },
+            { "japanese": "もう一度", "reading": "もういちど", "english": "once more; again" },
+            { "japanese": "六日", "reading": "むいか", "english": "sixth day of the month / 6 days" },
+            { "japanese": "向こう", "reading": "むこう", "english": "over there" },
+            { "japanese": "村", "reading": "むら", "english": "village" },
+            { "japanese": "六つ", "reading": "むっつ", "english": "six; 6" },
+            { "japanese": "難しい", "reading": "むずかしい", "english": "difficult" },
+            { "japanese": "長い", "reading": "ながい", "english": "long (distance); long (time); lengthy." },
+            { "japanese": "ナイフ", "reading": "ナイフ", "english": "knife" },
+            { "japanese": "中", "reading": "なか", "english": "inside; in; within; center" },
+            { "japanese": "鳴く", "reading": "なく", "english": "animal noise. to chirp" },
+            { "japanese": "無くす", "reading": "なくす", "english": "to lose (something)" },
+            { "japanese": "名前", "reading": "なまえ", "english": "name; full name; given name" },
+            { "japanese": "七つ", "reading": "ななつ", "english": "seven; 7" },
+            { "japanese": "何", "reading": "なに", "english": "what" },
+            { "japanese": "七日", "reading": "なのか", "english": "seventh day of the month / 7 days" },
+            { "japanese": "並べる", "reading": "ならべる", "english": "to line up, to set up" },
+            { "japanese": "並ぶ", "reading": "ならぶ", "english": "to line up, to stand in a line" },
+            { "japanese": "習う", "reading": "ならう", "english": "to be taught; to learn (from a teacher)" },
+            { "japanese": "夏", "reading": "なつ", "english": "summer" },
+            { "japanese": "夏休み", "reading": "なつやすみ", "english": "summer vacation; summer holiday" },
+            { "japanese": "何故", "reading": "なぜ", "english": "why; how" },
+            { "japanese": "猫", "reading": "ねこ", "english": "cat" },
+            { "japanese": "ネクタイ", "reading": "ネクタイ", "english": "tie; necktie" },
+            { "japanese": "寝る", "reading": "ねる", "english": "to sleep; to go to bed; to lie down" },
+            { "japanese": "二", "reading": "に", "english": "two; 2" },
+            { "japanese": "日曜日", "reading": "にちようび", "english": "Sunday" },
+            { "japanese": "賑やか", "reading": "にぎやか", "english": "bustling, busy" },
+            { "japanese": "日記", "reading": "にっき", "english": "diary; journal" },
+            { "japanese": "肉", "reading": "にく", "english": "meat" },
+            { "japanese": "荷物", "reading": "にもつ", "english": "luggage; baggage" },
+            { "japanese": "西", "reading": "にし", "english": "west" },
+            { "japanese": "庭", "reading": "にわ", "english": "garden" },
+            { "japanese": "登る", "reading": "のぼる", "english": "to climb" },
+            { "japanese": "飲み物", "reading": "のみもの", "english": "drink; beverage" },
+            { "japanese": "飲む", "reading": "のむ", "english": "to drink" },
+            { "japanese": "ノート", "reading": "ノート", "english": "notebook" },
+            { "japanese": "乗る", "reading": "のる", "english": "to get on (train, plane, bus, ship, etc.)" }, //400
+            { "japanese": "脱ぐ", "reading": "ぬぐ", "english": "to take off clothes" },
+            { "japanese": "温い", "reading": "ぬるい", "english": "luke warm" },
+            { "japanese": "ニュース", "reading": "nyuusu", "english": "news" },
+            { "japanese": "おばあさん", "reading": "obaasan", "english": "grandmother" },
+            { "japanese": "伯母さん", "reading": "おばさん", "english": "aunt; old lady" },
+            { "japanese": "お弁当", "reading": "おべんとう", "english": "lunch box; Japanese box lunch" },
+            { "japanese": "覚える", "reading": "おぼえる", "english": "to remember" },
+            { "japanese": "お茶", "reading": "おちゃ", "english": "tea" },
+            { "japanese": "お風呂", "reading": "おふろ", "english": "bath" },
+            { "japanese": "美味しい", "reading": "おいしい", "english": "delicious" },
+            { "japanese": "伯父さん", "reading": "おじさん", "english": "uncle; old man; mister" },
+            { "japanese": "お母さん", "reading": "おかあさん", "english": "mother; mom; mum; ma" },
+            { "japanese": "お金", "reading": "おかね", "english": "money" },
+            { "japanese": "お菓子", "reading": "おかし", "english": "confections; sweets; candy" },
+            { "japanese": "起きる", "reading": "おきる", "english": "to get up; to wake up" },
+            { "japanese": "置く", "reading": "おく", "english": "to put; to place" },
+            { "japanese": "奥さん", "reading": "おくさん", "english": "wife; your wife; his wife" },
+            { "japanese": "お巡りさん", "reading": "おまわりさん", "english": "police officer (friendly term for policeman)" },
+            { "japanese": "重い", "reading": "おもい", "english": "heavy" },
+            { "japanese": "面白い", "reading": "おもしろい", "english": "interesting" },
+            { "japanese": "同じ", "reading": "おなじ", "english": "same" },
+            { "japanese": "お腹", "reading": "おなか", "english": "stomach" },
+            { "japanese": "お姉さん", "reading": "おねえさん", "english": "elder sister; young lady; miss; ma'am" },
+            { "japanese": "音楽", "reading": "おんがく", "english": "music" },
+            { "japanese": "お兄さん", "reading": "おにいさん", "english": "older brother; elder brother; young man; buddy" },
+            { "japanese": "女", "reading": "おんな", "english": "woman; female sex" },
+            { "japanese": "女の子", "reading": "おんなのこ", "english": "girl; daughter; young women" },
+            { "japanese": "多い", "reading": "おおい", "english": "many; numerous; a lot; large quantity; frequent" },
+            { "japanese": "大きい", "reading": "おおきい", "english": "big; large; great; important" },
+            { "japanese": "大きな", "reading": "おおきな", "english": "big; large; great" },
+            { "japanese": "大勢", "reading": "おおぜい", "english": "crowd of people; great number of people" },
+            { "japanese": "降りる", "reading": "おりる", "english": "to get off" },
+            { "japanese": "お酒", "reading": "おさけ", "english": "alcohol" },
+            { "japanese": "お皿", "reading": "おさら", "english": "plate, dish" },
+            { "japanese": "教える", "reading": "おしえる", "english": "to teach" },
+            { "japanese": "遅い", "reading": "おそい", "english": "slow; time-consuming; late" },
+            { "japanese": "押す", "reading": "おす", "english": "to push; to press" },
+            { "japanese": "お手洗い", "reading": "おてあらい", "english": "toilet; restroom; lavatory; bathroom" },
+            { "japanese": "男", "reading": "おとこ", "english": "man; male" },
+            { "japanese": "男の子", "reading": "おとこのこ", "english": "boy; male child; baby boy" },
+            { "japanese": "大人", "reading": "おとな", "english": "adult" },
+            { "japanese": "一昨日", "reading": "おととい", "english": "day before yesterday" },
+            { "japanese": "一昨年", "reading": "おととし", "english": "year before last" },
+            { "japanese": "お父さん", "reading": "おとうさん", "english": "father; dad; papa; pa; pop; daddy" },
+            { "japanese": "弟", "reading": "おとうと", "english": "younger brother" },
+            { "japanese": "終わる", "reading": "おわる", "english": "to finish; to end" },
+            { "japanese": "泳ぐ", "reading": "およぐ", "english": "to swim" },
+            { "japanese": "パーティー", "reading": "paatii", "english": "party" },
+            { "japanese": "パン", "reading": "pan", "english": "bread" },
+            { "japanese": "ページ", "reading": "peeji", "english": "page" },
+            { "japanese": "ペン", "reading": "pen", "english": "pen" },
+            { "japanese": "ペット", "reading": "petto", "english": "pet" },
+            { "japanese": "ポケット", "reading": "poketto", "english": "pocket" },
+            { "japanese": "ポスト", "reading": "posuto", "english": "post" },
+            { "japanese": "プール", "reading": "puuru", "english": "swimming pool" },
+            { "japanese": "来月", "reading": "らいげつ", "english": "next month" },
+            { "japanese": "来年", "reading": "らいねん", "english": "next year" },
+            { "japanese": "来週", "reading": "らいしゅう", "english": "next week" },
+            { "japanese": "ラジオ", "reading": "rajiio", "english": "radio" },
+            { "japanese": "零", "reading": "れい", "english": "zero" },
+            { "japanese": "冷蔵庫", "reading": "れいぞうこ", "english": "refrigerator" },
+            { "japanese": "レコード", "reading": "rekoodo", "english": "record" },
+            { "japanese": "練習", "reading": "れんしゅう", "english": "practice; practicing" },
+            { "japanese": "レストラン", "reading": "resutoran", "english": "restaurant" },
+            { "japanese": "立派", "reading": "りっぱ", "english": "splendid" },
+            { "japanese": "六", "reading": "ろく", "english": "six; 6" },
+            { "japanese": "廊下", "reading": "ろうか", "english": "corridor; hallway; passageway" },
+            { "japanese": "旅行", "reading": "りょこう", "english": "travel; trip; journey; excursion; tour" },
+            { "japanese": "料理", "reading": "りょうり", "english": "cuisine" },
+            { "japanese": "両親", "reading": "りょうしん", "english": "parents; both parents" },
+            { "japanese": "留学生", "reading": "りゅうがくせい", "english": "overseas student; exchange student" },
+            { "japanese": "さあ", "reading": "saa", "english": "well..." },
+            { "japanese": "財布", "reading": "さいふ", "english": "purse; wallet" },
+            { "japanese": "魚", "reading": "さかな", "english": "fish" },
+            { "japanese": "先", "reading": "さき", "english": "previous; prior; first; earlier" },
+            { "japanese": "咲く", "reading": "さく", "english": "to bloom" },
+            { "japanese": "作文", "reading": "さくぶん", "english": "writing; composition" },
+            { "japanese": "寒い", "reading": "さむい", "english": "cold" },
+            { "japanese": "三", "reading": "さん", "english": "three; 3" },
+            { "japanese": "散歩", "reading": "さんぽ", "english": "walk; stroll" },
+            { "japanese": "再来年", "reading": "さらいねん", "english": "year after next" },
+            { "japanese": "差す", "reading": "さす", "english": "to stretch out hands, to raise an umbrella" },
+            { "japanese": "砂糖", "reading": "さとう", "english": "sugar" },
+            { "japanese": "背", "reading": "せ", "english": "height; stature; back; spine" },
+            { "japanese": "背広", "reading": "せびろ", "english": "business suit" },
+            { "japanese": "セーター", "reading": "seetaa", "english": "sweater; jumper" },
+            { "japanese": "生徒", "reading": "せいと", "english": "pupil; student" },
+            { "japanese": "石鹼", "reading": "せっけん", "english": "soap" },
+            { "japanese": "狭い", "reading": "せまい", "english": "narrow" },
+            { "japanese": "干", "reading": "せん", "english": "1,000; thousand" },
+            { "japanese": "先月", "reading": "せんげつ", "english": "last month" },
+            { "japanese": "先生", "reading": "せんせい", "english": "teacher; instructor; master" },
+            { "japanese": "先週", "reading": "せんしゅう", "english": "last week" },
+            { "japanese": "洗濯", "reading": "せんたく", "english": "washing; laundry" },
+            { "japanese": "写真", "reading": "しゃしん", "english": "photograph; photo" },
+            { "japanese": "シャツ", "reading": "shatsu", "english": "shirt" },
+            { "japanese": "シャワー", "reading": "shawaa", "english": "shower" },
+            { "japanese": "四", "reading": "し", "english": "four; 4" },
+            { "japanese": "七", "reading": "しち", "english": "seven; 7" },
+            { "japanese": "仕事", "reading": "しごと", "english": "work; job; business" }, //500
+            { "japanese": "閉まる", "reading": "しまる", "english": "to close, to be closed" },
+            { "japanese": "閉める", "reading": "しめる", "english": "to close; to shut" },
+            { "japanese": "締める", "reading": "しめる", "english": "to tie; to fasten; to tighten" },
+            { "japanese": "新聞", "reading": "しんぶん", "english": "newspaper" },
+            { "japanese": "死ぬ", "reading": "しぬ", "english": "to die" },
+            { "japanese": "塩", "reading": "しお", "english": "salt" },
+            { "japanese": "白", "reading": "しろ", "english": "white; innocence; innocent person" },
+            { "japanese": "白い", "reading": "しろい", "english": "white" },
+            { "japanese": "知る", "reading": "しる", "english": "to know" },
+            { "japanese": "下", "reading": "した", "english": "below; down; under; bottom" },
+            { "japanese": "質問", "reading": "しつもん", "english": "question; inquiry" },
+            { "japanese": "静か", "reading": "しずか", "english": "quiet" },
+            { "japanese": "食堂", "reading": "しょくどう", "english": "cafeteria; dining room" },
+            { "japanese": "醬油", "reading": "しょうゆ", "english": "soy sauce" },
+            { "japanese": "宿題", "reading": "しゅくだい", "english": "homework; assignment; pending issue" },
+            { "japanese": "そば", "reading": "soba", "english": "near; beside" },
+            { "japanese": "そっち", "reading": "socchi", "english": "that way; over there" },
+            { "japanese": "そちら", "reading": "sochira", "english": "that way (distant from speaker, close to listener); you; your family" },
+            { "japanese": "そこ", "reading": "soko", "english": "that place; there" },
+            { "japanese": "その", "reading": "sono", "english": "that" },
+            { "japanese": "空", "reading": "そら", "english": "sky; the air" },
+            { "japanese": "それ", "reading": "sore", "english": "that" },
+            { "japanese": "それでは", "reading": "sore dewa", "english": "in that situation" },
+            { "japanese": "外", "reading": "そと", "english": "outside; exterior;" },
+            { "japanese": "掃除", "reading": "そうじ", "english": "to clean, to sweep" },
+            { "japanese": "直ぐに", "reading": "すぐに", "english": "immediately; right away; instantly" },
+            { "japanese": "水曜日", "reading": "すいようび", "english": "Wednesday" },
+            { "japanese": "スカート", "reading": "sukaato", "english": "skirt" },
+            { "japanese": "好き", "reading": "すき", "english": "like" },
+            { "japanese": "少し", "reading": "すこし", "english": "a little (bit); small quantity; few; short distance" },
+            { "japanese": "少ない", "reading": "すくない", "english": "few; a little; scarce; insufficient; seldom" },
+            { "japanese": "住む", "reading": "すむ", "english": "to live in; to reside; to inhabit; to dwell; to abide" },
+            { "japanese": "スポーツ", "reading": "supootsu", "english": "sport; sports" },
+            { "japanese": "スプーン", "reading": "supuun", "english": "spoon" },
+            { "japanese": "スリッパ", "reading": "surippa", "english": "slipper; slippers" },
+            { "japanese": "ストーブ", "reading": "sutoobu", "english": "heater; stove" },
+            { "japanese": "吸う", "reading": "すう", "english": "to smoke, to suck" },
+            { "japanese": "座る", "reading": "すわる", "english": "to sit" },
+            { "japanese": "涼しい", "reading": "すずしい", "english": "refreshing, cool" },
+            { "japanese": "たばこ", "reading": "tabako", "english": "tobacco; cigarette" },
+            { "japanese": "食べ物", "reading": "たべもの", "english": "food" },
+            { "japanese": "食べる", "reading": "たべる", "english": "to eat" },
+            { "japanese": "多分", "reading": "たぶん", "english": "perhaps; probably" },
+            { "japanese": "大変", "reading": "たいへん", "english": "very; greatly; terribly; serious; difficult" },
+            { "japanese": "大切", "reading": "たいせつ", "english": "important; necessary; indispensable; beloved" },
+            { "japanese": "大使館", "reading": "たいしかん", "english": "embassy" },
+            { "japanese": "高い", "reading": "たかい", "english": "high; tall; expensive; above average" },
+            { "japanese": "沢山", "reading": "たくさん", "english": "many" },
+            { "japanese": "タクシー", "reading": "takushii", "english": "taxi" },
+            { "japanese": "卵", "reading": "たまご", "english": "eggs; egg" },
+            { "japanese": "誕生日", "reading": "たんじょうび", "english": "birthday" },
+            { "japanese": "頼む", "reading": "たのむ", "english": "to ask" },
+            { "japanese": "楽しい", "reading": "たのしい", "english": "enjoyable; fun" },
+            { "japanese": "縦", "reading": "たて", "english": "length, height" },
+            { "japanese": "建物", "reading": "たてもの", "english": "building" },
+            { "japanese": "立つ", "reading": "たつ", "english": "to stand; to stand up" },
+            { "japanese": "手", "reading": "て", "english": "hand; arm" },
+            { "japanese": "テーブル", "reading": "teeburu", "english": "table" },
+            { "japanese": "テープ", "reading": "teepu", "english": "tape" },
+            { "japanese": "テープレコーダー", "reading": "teepu rekoodaa", "english": "tape recorder" },
+            { "japanese": "手紙", "reading": "てがみ", "english": "Letter (message)" },
+            { "japanese": "天気", "reading": "てんき", "english": "weather; the elements" },
+            { "japanese": "テレビ", "reading": "terebi", "english": "television; TV" },
+            { "japanese": "テスト", "reading": "tesuto", "english": "examination; quiz; test" },
+            { "japanese": "戸", "reading": "と", "english": "Japanese style door" },
+            { "japanese": "飛ぶ", "reading": "とぶ", "english": "to fly; to hop" },
+            { "japanese": "トイレ", "reading": "toire", "english": "toilet" },
+            { "japanese": "時計", "reading": "とけい", "english": "watch; clock; timepiece" },
+            { "japanese": "時", "reading": "とき", "english": "time; moment; occasion; chance" },
+            { "japanese": "時々", "reading": "ときどき", "english": "sometimes; at times" },
+            { "japanese": "所", "reading": "ところ", "english": "place" },
+            { "japanese": "止まる", "reading": "とまる", "english": "to stop; to come to a halt" },
+            { "japanese": "友達", "reading": "ともだち", "english": "friend; companion" },
+            { "japanese": "隣", "reading": "となり", "english": "next door to" },
+            { "japanese": "遠い", "reading": "とおい", "english": "far" },
+            { "japanese": "十日", "reading": "とおか", "english": "tenth day of the month / 10 days" },
+            { "japanese": "鳥", "reading": "とり", "english": "bird" },
+            { "japanese": "鶏肉", "reading": "とりにく", "english": "chicken meat" },
+            { "japanese": "取る", "reading": "とる", "english": "to take; to pick up; to harvest; to earn; to win; to choose" },
+            { "japanese": "撮る", "reading": "とる", "english": "to take a photo or record a film" },
+            { "japanese": "年", "reading": "とし", "english": "year; age" },
+            { "japanese": "図書館", "reading": "としょかん", "english": "library" },
+            { "japanese": "次", "reading": "つぎ", "english": "next" },
+            { "japanese": "一日", "reading": "ついたち", "english": "first day of the month" },
+            { "japanese": "疲れる", "reading": "つかれる", "english": "to get tired" },
+            { "japanese": "使う", "reading": "つかう", "english": "to use" },
+            { "japanese": "つける", "reading": "tsukeru", "english": "to turn on" },
+            { "japanese": "付ける", "reading": "つける", "english": "to attach; affix; add; apply" },
+            { "japanese": "着く", "reading": "つく", "english": "to arrive at" },
+            { "japanese": "机", "reading": "つくえ", "english": "desk" },
+            { "japanese": "作る", "reading": "つくる", "english": "to make" },
+            { "japanese": "詰まらない", "reading": "つまらない", "english": "boring" },
+            { "japanese": "冷たい", "reading": "つめたい", "english": "cold to the touch" },
+            { "japanese": "勤める", "reading": "つとめる", "english": "to work for someone" },
+            { "japanese": "強い", "reading": "つよい", "english": "powerful" },
+            { "japanese": "上", "reading": "うえ", "english": "above; up; over; top; surface" },
+            { "japanese": "生まれる", "reading": "うまれる", "english": "to be born" },
+            { "japanese": "海", "reading": "うみ", "english": "sea" },
+            { "japanese": "売る", "reading": "うる", "english": "to sell" },
+            { "japanese": "煩い", "reading": "うるさい", "english": "noisy, annoying" }, //600
+            { "japanese": "後ろ", "reading": "うしろ", "english": "back; behind; rear" },
+            { "japanese": "薄い", "reading": "うすい", "english": "thin; weak" },
+            { "japanese": "歌", "reading": "うた", "english": "song" },
+            { "japanese": "歌う", "reading": "うたう", "english": "to sing" },
+            { "japanese": "上着", "reading": "うわぎ", "english": "coat; tunic; jacket; outer garment" },
+            { "japanese": "ワイシャツ", "reading": "ワイシャツ", "english": "shirt" },
+            { "japanese": "若い", "reading": "わかい", "english": "young" },
+            { "japanese": "分かる", "reading": "わかる", "english": "to understand; to comprehend; to grasp; to see; to get; to follow" },
+            { "japanese": "悪い", "reading": "わるい", "english": "bad; poor; undesirable" },
+            { "japanese": "忘れる", "reading": "わすれる", "english": "to forget" },
+            { "japanese": "渡る", "reading": "わたる", "english": "to go across" },
+            { "japanese": "私", "reading": "わたし", "english": "I; myself" },
+            { "japanese": "渡す", "reading": "わたす", "english": "to hand over" },
+            { "japanese": "山", "reading": "やま", "english": "mountain; hill" },
+            { "japanese": "八百屋", "reading": "やおや", "english": "greengrocer; fruit and vegetable shop" },
+            { "japanese": "やる", "reading": "やる", "english": "to do" },
+            { "japanese": "野菜", "reading": "やさい", "english": "vegetable" },
+            { "japanese": "易しい", "reading": "やさしい", "english": "easy, simple" },
+            { "japanese": "安い", "reading": "やすい", "english": "cheap; inexpensive" },
+            { "japanese": "休み", "reading": "やすみ", "english": "rest; vacation; holiday" },
+            { "japanese": "休む", "reading": "やすむ", "english": "to be absent; to take a day off; to rest" },
+            { "japanese": "八つ", "reading": "やっつ", "english": "eight: 8" },
+            { "japanese": "呼ぶ", "reading": "よぶ", "english": "to call out, to invite" },
+            { "japanese": "良い", "reading": "よい/いい", "english": "good" },
+            { "japanese": "四日", "reading": "よっか", "english": "fourth day of the month / 4 days" },
+            { "japanese": "横", "reading": "よこ", "english": "beside, side, width" },
+            { "japanese": "よく", "reading": "よく", "english": "often, well" },
+            { "japanese": "読む", "reading": "よむ", "english": "to read; to guess; to predict; to read (someone's thoughts)" },
+            { "japanese": "夜", "reading": "よる", "english": "evening; night" },
+            { "japanese": "四つ", "reading": "よつ", "english": "four; 4" },
+            { "japanese": "洋服", "reading": "ようふく", "english": "western clothes" },
+            { "japanese": "八日", "reading": "ようか", "english": "eighth day of the month / 8 days" },
+            { "japanese": "弱い", "reading": "よわい", "english": "weak" },
+            { "japanese": "雪", "reading": "ゆき", "english": "snow" },
+            { "japanese": "ゆっくり", "reading": "ゆっくり", "english": "slowly" },
+            { "japanese": "昨夜", "reading": "ゆうべ", "english": "last night" },
+            { "japanese": "郵便局", "reading": "ゆうびんきょく", "english": "post office" },
+            { "japanese": "夕方", "reading": "ゆうがた", "english": "evening; dusk" },
+            { "japanese": "夕飯", "reading": "ゆうはん", "english": "evening meal" },
+            { "japanese": "有名", "reading": "ゆうめい", "english": "famous" },
+            { "japanese": "雑誌", "reading": "ざっし", "english": "magazine" },
+            { "japanese": "全部", "reading": "ぜんぶ", "english": "all" },
+            { "japanese": "ゼロ", "reading": "ゼロ", "english": "zero" },
+            { "japanese": "ズボン", "reading": "ズボン", "english": "trousers; pants" } //644
+        ];
+
+        // DOM elements
+        const vocabCard = document.getElementById('vocab-card');
+        const vocabJapanese = document.getElementById('vocab-japanese');
+        const vocabReading = document.getElementById('vocab-reading');
+        const vocabEnglish = document.getElementById('vocab-english');
+        const optionsGrid = document.getElementById('options-grid');
+        const progressElement = document.getElementById('progress');
+        const restartButton = document.getElementById('restart-button');
+        const displayRadios = document.querySelectorAll('input[name="display-type"]');
+        const answerTypeGroup = document.getElementById('answer-type-group');
+        const sessionSizeSelect = document.getElementById('session-size');
+        const customSessionSizeInput = document.getElementById('custom-session-size');
+        const randomizeToggle = document.getElementById('randomize-toggle');
+        const statsCorrect = document.getElementById('stats-correct');
+        const statsIncorrect = document.getElementById('stats-incorrect');
+        const statsRemaining = document.getElementById('stats-remaining');
+        const statsPercentage = document.getElementById('stats-percentage');
+        
+        const answerMethodGroup = document.getElementById('answer-method-group');
+        const typingInputContainer = document.getElementById('typing-input-container');
+        const typingInput = document.getElementById('typing-input');
+        const typingFeedback = document.getElementById('typing-feedback');
+        
+        const rangeModeToggle = document.getElementById('range-mode-toggle');
+        const rangeControls = document.getElementById('range-controls');
+        const rangeStartInput = document.getElementById('range-start');
+        const rangeEndInput = document.getElementById('range-end');
+
+        // State variables
+        let currentVocab;
+        let sessionVocab = [];
+        let isAnswered = false;
+        let selectedDisplayType = 'japanese';
+        let selectedAnswerType = 'reading'; 
+        let isRandomized = false;
+        
+        let initialSessionSize = 0;
+        let correctlyAnsweredCount = 0;
+        let incorrectAnswerCount = 0;
+        
+        let selectedAnswerMethod = 'multiple-choice';
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        function getAnswerValue(vocabObject, type) {
+            switch (type) {
+                case 'japanese': return vocabObject.japanese;
+                case 'reading': 
+                // FIX: If the reading is in Romaji (English letters), convert it to Kana
+                // using the wanakana library you already loaded.
+                return wanakana.toKana(vocabObject.reading);
+                case 'english': return vocabObject.english;
+                default: return '';
+            }
+        }   
+
+        // --- MULTIPLE CHOICE LOGIC --- //
+        function getRandomIncorrectOptions(correctOption, count) {
+            const allButCorrect = vocabData.filter(item => item.japanese !== correctOption.japanese);
+            shuffleArray(allButCorrect);
+            return allButCorrect.slice(0, count);
+        }
+        
+        function renderStandardAnswerOptions(options) {
+            optionsGrid.innerHTML = '';
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.classList.add('option-button');
+                button.textContent = getAnswerValue(option, selectedAnswerType);
+                button.addEventListener('click', () => checkStandardAnswer(button, option));
+                optionsGrid.appendChild(button);
+            });
+        }
+
+        function checkStandardAnswer(button, selectedOption) {
+            if (isAnswered) return;
+            isAnswered = true;
+            vocabCard.classList.add('flipped');
+            const isCorrect = selectedOption.japanese === currentVocab.japanese;
+
+            if (isCorrect) {
+                correctlyAnsweredCount++;
+                sessionVocab.shift();
+                button.classList.add('correct');
+            } else {
+                incorrectAnswerCount++;
+                button.classList.add('incorrect');
+                const failedCard = sessionVocab.shift();
+                sessionVocab.push(failedCard);
+            }
+            
+            const allButtons = optionsGrid.querySelectorAll('.option-button');
+            const correctAnswerValue = getAnswerValue(currentVocab, selectedAnswerType);
+            allButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === correctAnswerValue) {
+                    btn.classList.add('correct');
+                }
+            });
+            
+            updateProgress();
+            setupAdvanceHandler();
+        }
+        
+        // --- TYPING LOGIC --- //
+        function setupTypingQuestion() {
+            typingInput.value = '';
+            typingInput.disabled = false;
+            typingInput.classList.remove('correct-input', 'incorrect-input');
+            typingFeedback.textContent = 'Type the reading in hiragana or romaji.';
+            setTimeout(() => typingInput.focus(), 100);
+        }
+
+        function handleTypingAnswer(event) {
+            if (event.key !== 'Enter' || isAnswered) return;
+
+            const userInput = typingInput.value.trim().toLowerCase();
+            if (!userInput) return;
+
+            const correctReading = currentVocab.reading;
+            const correctRomaji = wanakana.toRomaji(correctReading);
+
+            if (userInput === correctReading || userInput === correctRomaji) {
+                isAnswered = true;
+                typingInput.disabled = true;
+                typingInput.classList.add('correct-input');
+                typingFeedback.textContent = `Correct! It's ${correctReading}.`;
+                
+                correctlyAnsweredCount++;
+                sessionVocab.shift();
+                vocabCard.classList.add('flipped');
+                updateProgress();
+                setupAdvanceHandler();
+            } else {
+                isAnswered = true;
+                typingInput.disabled = true;
+                typingInput.classList.add('incorrect-input');
+                typingFeedback.textContent = `Incorrect. The correct reading was: ${correctReading} (${correctRomaji})`;
+                
+                incorrectAnswerCount++;
+                const failedCard = sessionVocab.shift();
+                sessionVocab.push(failedCard);
+                vocabCard.classList.add('flipped');
+                updateProgress();
+                setupAdvanceHandler();
+            }
+        }
+
+        // --- CORE APP LOGIC --- //
+        function loadNewVocab() {
+            if (sessionVocab.length === 0 && initialSessionSize > 0) {
+                const finalPercentage = statsPercentage.textContent;
+                const finalCorrect = statsCorrect.textContent;
+                const finalIncorrect = statsIncorrect.textContent;
+                
+                vocabCard.classList.add('flipped');
+                vocabJapanese.style.fontSize = '8rem';
+                vocabJapanese.textContent = `${finalPercentage}%`;
+                vocabReading.textContent = "Final Score";
+                vocabEnglish.textContent = `Correct: ${finalCorrect} | Incorrect: ${finalIncorrect}`;
+                
+                optionsGrid.innerHTML = '';
+                typingInputContainer.style.display = 'none';
+                document.removeEventListener('keydown', globalAdvanceHandler);
+                document.removeEventListener('click', globalAdvanceHandler);
+                return;
+            }
+
+            isAnswered = false;
+            vocabCard.classList.remove('flipped');
+            optionsGrid.innerHTML = '';
+            document.removeEventListener('keydown', globalAdvanceHandler);
+            document.removeEventListener('click', globalAdvanceHandler);
+            typingInput.removeEventListener('keydown', handleTypingAnswer);
+
+            currentVocab = sessionVocab[0];
+            
+            updateAnswerControls();
+            updateVocabDisplay();
+
+            if (selectedAnswerMethod === 'typing' && selectedAnswerType === 'reading') {
+                optionsGrid.style.display = 'none';
+                typingInputContainer.style.display = 'flex';
+                setupTypingQuestion();
+                typingInput.addEventListener('keydown', handleTypingAnswer);
+            } else {
+                optionsGrid.style.display = 'grid';
+                typingInputContainer.style.display = 'none';
+                const correctOption = currentVocab;
+                const incorrectOptions = getRandomIncorrectOptions(currentVocab, 8);
+                let allOptions = [correctOption, ...incorrectOptions];
+                shuffleArray(allOptions);
+                renderStandardAnswerOptions(allOptions); 
+            }
+        }
+
+        function updateVocabDisplay() {
+            vocabJapanese.textContent = '';
+            vocabReading.textContent = '';
+            vocabEnglish.textContent = '';
+            vocabJapanese.style.fontSize = '5rem';
+
+            switch (selectedDisplayType) {
+                case 'japanese':
+                    vocabJapanese.textContent = currentVocab.japanese;
+                    vocabReading.textContent = currentVocab.reading;
+                    vocabEnglish.textContent = currentVocab.english;
+                    break;
+                case 'reading':
+                    vocabJapanese.textContent = currentVocab.reading;
+                    vocabReading.textContent = currentVocab.japanese;
+                    vocabEnglish.textContent = currentVocab.english;
+                    break;
+                case 'english':
+                    vocabJapanese.textContent = currentVocab.english;
+                    vocabJapanese.style.fontSize = '3rem';
+                    vocabReading.textContent = currentVocab.japanese;
+                    vocabEnglish.textContent = currentVocab.reading;
+                    break;
+            }
+        }
+
+        // --- CONTROLS AND STATS --- //
+        function updateAnswerControls() {
+            answerTypeGroup.innerHTML = '';
+            const labelMap = {
+                japanese: 'Japanese',
+                reading: 'Reading',
+                english: 'English'
+            };
+
+            let availableAnswerTypes;
+            switch (selectedDisplayType) {
+                case 'japanese': availableAnswerTypes = ['reading', 'english']; break;
+                case 'reading': availableAnswerTypes = ['japanese', 'english']; break;
+                case 'english': availableAnswerTypes = ['japanese', 'reading']; break;
+            }
+            if (!availableAnswerTypes.includes(selectedAnswerType)) {
+                selectedAnswerType = availableAnswerTypes[0];
+            }
+            availableAnswerTypes.forEach(type => {
+                const label = document.createElement('label');
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'answer-type';
+                input.value = type;
+                if (type === selectedAnswerType) input.checked = true;
+                const customRadio = document.createElement('span');
+                customRadio.classList.add('custom-radio');
+                label.appendChild(input);
+                label.appendChild(customRadio);
+                const typeLabel = labelMap[type];
+                label.appendChild(document.createTextNode(typeLabel));
+                input.addEventListener('change', (event) => {
+                    selectedAnswerType = event.target.value;
+                    if (!isAnswered) loadNewVocab();
+                });
+                answerTypeGroup.appendChild(label);
+            });
+            
+            document.getElementById('answer-method-typing').disabled = !(selectedAnswerType === 'reading');
+        }
+
+        function setupAnswerMethodControls() {
+            const methods = [
+                { value: 'multiple-choice', label: 'Multiple Choice' },
+                { value: 'typing', label: 'Typing' }
+            ];
+            answerMethodGroup.innerHTML = '';
+            methods.forEach(method => {
+                const label = document.createElement('label');
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'answer-method';
+                input.id = `answer-method-${method.value}`;
+                input.value = method.value;
+                if (method.value === selectedAnswerMethod) input.checked = true;
+                
+                const customRadio = document.createElement('span');
+                customRadio.classList.add('custom-radio');
+                
+                label.appendChild(input);
+                label.appendChild(customRadio);
+                label.appendChild(document.createTextNode(method.label));
+                
+                input.addEventListener('change', (event) => {
+                    selectedAnswerMethod = event.target.value;
+                    restartFlashcard(); 
+                });
+                answerMethodGroup.appendChild(label);
+            });
+        }
+
+        function updateStats() {
+            statsCorrect.textContent = correctlyAnsweredCount;
+            statsIncorrect.textContent = incorrectAnswerCount;
+            statsRemaining.textContent = sessionVocab.length;
+            
+            const totalAttempts = correctlyAnsweredCount + incorrectAnswerCount;
+            const accuracy = totalAttempts > 0 ? Math.round((correctlyAnsweredCount / totalAttempts) * 100) : 0;
+            statsPercentage.textContent = accuracy;
+        }
+
+        function updateProgress() {
+            const completionPercentage = initialSessionSize > 0 ? (correctlyAnsweredCount / initialSessionSize) * 100 : 0;
+            progressElement.style.width = `${completionPercentage}%`;
+            updateStats();
+        }
+
+        function restartFlashcard() {
+            correctlyAnsweredCount = 0;
+            incorrectAnswerCount = 0;
+            
+            if (rangeModeToggle.checked) {
+                let start = parseInt(rangeStartInput.value, 10);
+                let end = parseInt(rangeEndInput.value, 10);
+
+                if (isNaN(start) || isNaN(end) || start < 1 || end < start || start > vocabData.length) {
+                    sessionVocab = [];
+                    initialSessionSize = 0;
+                } else {
+                    start = start - 1; 
+                    end = Math.min(end, vocabData.length);
+                    rangeStartInput.value = start + 1;
+                    rangeEndInput.value = end;
+                    sessionVocab = vocabData.slice(start, end);
+                    shuffleArray(sessionVocab);
+                    initialSessionSize = sessionVocab.length;
+                }
+            } else {
+                let sessionSize;
+                const sessionSizeValue = sessionSizeSelect.value;
+
+                if (sessionSizeValue === 'custom') {
+                    const customSize = parseInt(customSessionSizeInput.value, 10);
+                    if (isNaN(customSize) || customSize <= 0) {
+                        return; 
+                    }
+                    sessionSize = Math.min(customSize, vocabData.length);
+                    customSessionSizeInput.value = sessionSize;
+                } else {
+                    sessionSize = sessionSizeValue === 'all' ? vocabData.length : parseInt(sessionSizeValue, 10);
+                }
+                
+                initialSessionSize = sessionSize;
+
+                let sourceDeck = [...vocabData];
+                if (isRandomized) {
+                    shuffleArray(sourceDeck);
+                    sessionVocab = sourceDeck.slice(0, sessionSize);
+                } else {
+                    let sessionDeck = sourceDeck.slice(0, sessionSize);
+                    shuffleArray(sessionDeck);
+                    sessionVocab = sessionDeck;
+                }
+            }
+            
+            updateProgress();
+            loadNewVocab();
+        }
+
+        function globalAdvanceHandler(event) {
+            if (event.type === 'click' && event.target.closest('.controls-container, .option-button, #typing-input')) {
+                return;
+            }
+            loadNewVocab();
+        }
+
+        function setupAdvanceHandler() {
+             setTimeout(() => {
+                 document.addEventListener('keydown', globalAdvanceHandler, { once: true });
+                 document.addEventListener('click', globalAdvanceHandler, { once: true });
+            }, 600);
+        }
+
+        // --- EVENT LISTENERS & INITIALIZATION --- //
+        restartButton.addEventListener('click', restartFlashcard);
+        displayRadios.forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                selectedDisplayType = event.target.value;
+                updateAnswerControls();
+                if (!isAnswered) loadNewVocab();
+            });
+        });
+
+        sessionSizeSelect.addEventListener('change', () => {
+            if (sessionSizeSelect.value === 'custom') {
+                customSessionSizeInput.style.display = 'inline-block';
+                customSessionSizeInput.value = '';
+                customSessionSizeInput.focus();
+            } else {
+                customSessionSizeInput.style.display = 'none';
+                restartFlashcard();
+            }
+        });
+
+        customSessionSizeInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                restartFlashcard();
+                customSessionSizeInput.blur();
+            }
+        });
+        customSessionSizeInput.addEventListener('change', restartFlashcard);
+
+        randomizeToggle.addEventListener('change', (event) => {
+            isRandomized = event.target.checked;
+            restartFlashcard();
+        });
+
+        rangeModeToggle.addEventListener('change', () => {
+            const isRangeMode = rangeModeToggle.checked;
+            rangeControls.style.display = isRangeMode ? 'flex' : 'none';
+            sessionSizeSelect.disabled = isRangeMode;
+            customSessionSizeInput.disabled = isRangeMode;
+            randomizeToggle.disabled = isRangeMode;
+            if (isRangeMode) {
+                rangeStartInput.focus();
+            } else {
+                restartFlashcard();
+            }
+        });
+
+        const restartFromRange = () => {
+            if (rangeModeToggle.checked) {
+                restartFlashcard();
+            }
+        };
+        rangeStartInput.addEventListener('change', restartFromRange);
+        rangeEndInput.addEventListener('change', restartFromRange);
+        rangeEndInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                restartFromRange();
+                rangeEndInput.blur();
+            }
+        });
+
+        vocabCard.addEventListener('click', () => {
+            if (!isAnswered) vocabCard.classList.toggle('flipped');
+        });
+
+        window.onload = () => {
+            setupAnswerMethodControls();
+            restartFlashcard();
+        };
+    </script>
+</body>
+</html>

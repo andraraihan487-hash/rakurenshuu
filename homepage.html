@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Shuffle</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for a clean look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom font for Japanese characters */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Dark charcoal background to match the image */
+            background-color: #222;
+        }
+        #character-display, #top-left-char {
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        /* Style for the navigation buttons to match the image */
+        .nav-button {
+            /* White background for the buttons */
+            background-color: #f7fafc; /* Tailwind's gray-100 */
+            /* Dark text color for contrast */
+            color: #2d3748; /* Tailwind's gray-800 */
+            font-weight: 600;
+        }
+        .nav-button:hover {
+            background-color: #e2e8f0; /* Tailwind's gray-200 for hover */
+        }
+        /* Minimalist style for dropdown menus */
+        .dropdown-menu {
+            background-color: #f7fafc; /* Match button background */
+            color: #2d3748; /* Match button text color */
+        }
+        .dropdown-link:hover {
+            background-color: #e2e8f0; /* Match button hover */
+        }
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- Header Section -->
+    <header class="fixed top-0 left-0 w-full p-6 flex items-center justify-center z-10 pt-20">
+        <!-- Top-left character (positioned absolutely relative to the header) -->
+        <div id="top-left-char" class="absolute left-6 top-1/2 -translate-y-1/2 text-4xl font-bold text-gray-300 select-none">
+            rakurenshuu
+        </div>
+
+        <!-- Centered Navigation with Dropdowns -->
+        <nav class="flex space-x-4">
+            <!-- Kana Dropdown -->
+            <div class="relative">
+                <button class="nav-button dropdown-toggle py-2 px-8 rounded-full transition-colors w-32">kana</button>
+                <div class="dropdown-menu hidden absolute mt-2 w-full rounded-lg shadow-xl py-1 text-sm">
+                    <a href="#" class="dropdown-link block px-4 py-2">Hiragana</a>
+                    <a href="#" class="dropdown-link block px-4 py-2">Katakana</a>
+                </div>
+            </div>
+            <!-- Kanji Dropdown -->
+            <div class="relative">
+                <button class="nav-button dropdown-toggle py-2 px-8 rounded-full transition-colors w-32">kanji</button>
+                <div class="dropdown-menu hidden absolute mt-2 w-full rounded-lg shadow-xl py-1 text-sm">
+                    <a href="N5/N5_latest.html" class="dropdown-link block px-4 py-2">JLPT N5</a>
+                    <a href="#" class="dropdown-link block px-4 py-2">JLPT N4</a>
+                    <a href="#" class="dropdown-link block px-4 py-2">JLPT N3</a>
+                    <a href="#" class="dropdown-link block px-4 py-2">JLPT N2</a>
+                    <a href="#" class="dropdown-link block px-4 py-2">JLPT N1</a>
+                </div>
+            </div>
+            <!-- Vocab Dropdown -->
+            <div class="relative">
+                <button class="nav-button dropdown-toggle py-2 px-8 rounded-full transition-colors w-32">vocab</button>
+                <div class="dropdown-menu hidden absolute mt-2 w-full rounded-lg shadow-xl py-1 text-sm">
+                    <a href="N5/N5_Vocabulary.html" class="dropdown-link block px-4 py-2">JLPT N5</a>
+                    <a href="N4/N4_Vocabulary.html" class="dropdown-link block px-4 py-2">JLPT N4</a>
+                    <a href="#" class="dropdown-link block px-4 py-2">JLPT N3</a>
+                    <a href="#" class="dropdown-link block px-4 py-2">JLPT N2</a>
+                    <a href="#" class="dropdown-link block px-4 py-2">JLPT N1</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main container to center the content -->
+    <main class="min-h-screen flex items-center justify-center p-4">
+        <div class="text-center"> <!-- A container to center both elements vertically -->
+            <!-- The character will be displayed inside this div -->
+            <div id="character-display" class="text-9xl md:text-[20rem] font-bold text-gray-300 select-none">
+                ア
+            </div>
+            <!-- Inspirational Text -->
+            <p class="text-gray-400 text-lg md:text-xl max-w-xl mx-auto mt-12 leading-relaxed">
+                A collection of Japanese proverbs, or 'kotowaza', offer wisdom on life. For example, 七転び八起き (nanakorobi yaoki) teaches resilience, meaning "fall down seven times, stand up eight."
+            </p>
+        </div>
+    </main>
+
+    <script>
+        // --- Character Data ---
+        const hiragana = ['あ', 'い', 'う', 'え', 'お', 'か', 'き', 'く', 'け', 'こ', 'さ', 'し', 'す', 'せ', 'そ', 'た', 'ち', 'つ', 'て', 'と', 'な', 'に', 'ぬ', 'ね', 'の', 'は', 'ひ', 'ふ', 'へ', 'ほ', 'ま', 'み', 'む', 'め', 'も', 'や', 'ゆ', 'よ', 'ら', 'り', 'る', 'れ', 'ろ', 'わ', 'を', 'ん', 'が', 'ぎ', 'ぐ', 'げ', 'ご', 'ざ', 'じ', 'ず', 'ぜ', 'ぞ', 'だ', 'ぢ', 'づ', 'で', 'ど', 'ば', 'び', 'ぶ', 'べ', 'ぼ', 'ぱ', 'ぴ', 'ぷ', 'ぺ', 'ぽ'];
+        const katakana = ['ア', 'イ', 'ウ', 'エ', 'オ', 'カ', 'キ', 'ク', 'ケ', 'コ', 'サ', 'シ', 'ス', 'セ', 'ソ', 'タ', 'チ', 'ツ', 'テ', 'ト', 'ナ', 'ニ', 'ヌ', 'ネ', 'ノ', 'ハ', 'ヒ', 'フ', 'ヘ', 'ホ', 'マ', 'ミ', 'ム', 'メ', 'モ', 'ヤ', 'ユ', 'ヨ', 'ラ', 'リ', 'ル', 'レ', 'ロ', 'ワ', 'ヲ', 'ン', 'ガ', 'ギ', 'グ', 'ゲ', 'ゴ', 'ザ', 'ジ', 'ズ', 'ゼ', 'ゾ', 'ダ', 'ヂ', 'ヅ', 'デ', 'ド', 'バ', 'ビ', 'ブ', 'ベ', 'ボ', 'パ', 'ピ', 'プ', 'ペ', 'ポ'];
+        const allCharacters = [...hiragana, ...katakana];
+
+        // --- Shuffling Logic ---
+        const characterDisplay = document.getElementById('character-display');
+        function shuffleCharacter() {
+            const randomIndex = Math.floor(Math.random() * allCharacters.length);
+            characterDisplay.textContent = allCharacters[randomIndex];
+        }
+        setInterval(shuffleCharacter, 1000);
+
+        // --- Dropdown Logic ---
+        const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+        
+        dropdownToggles.forEach(toggle => {
+            toggle.addEventListener('click', (event) => {
+                // Stop the click from being immediately caught by the window listener
+                event.stopPropagation();
+                const dropdownMenu = toggle.nextElementSibling;
+
+                // Close all other open dropdowns first
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    if (menu !== dropdownMenu) {
+                        menu.classList.add('hidden');
+                    }
+                });
+
+                // Then toggle the clicked one
+                dropdownMenu.classList.toggle('hidden');
+            });
+        });
+
+        // Add a listener to the whole window to close dropdowns when clicking anywhere else
+        window.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        });
+
+    </script>
+
+</body>
+</html>
